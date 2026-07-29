@@ -16,7 +16,6 @@ complete:
 - compile-time I2C contract checks
 - wiring and hardware-test procedure
 - token-efficient Codex/Claude instruction and handoff layers
-- reversible AX1 prompts for bootstrap and skill-repository transfer
 
 verified-2026-07-29:
 - `BOARD_XIAO_ESP32S3` firmware compile PASS; RAM 45168/327680; Flash 1148253/3342336
@@ -26,7 +25,6 @@ verified-2026-07-29:
 - contract `static_assert` count: 15
 - `git diff --check` PASS
 - serial devices detected: none
-- AX1 payloads verified by byte-exact round trip, deterministic re-encode, and corruption rejection
 - historical handoff preserved with Git blob `5791de8427f943984ebb6cbcd029383dfe4c42e6`
 
 hardware-confirmed:
@@ -82,8 +80,6 @@ blocked-by:
 - contract tests: `pio-test/test_i2c_contract/test_main.cpp`
 - hardware tests: `pio-test/test_xiao_lsm6dsv_hardware/test_main.cpp`
 - forbidden legacy probe: `test/I2C_TEST.cpp`
-- transfer payloads/prompts: `agent-prompts/`
-- reversible codec: `scripts/agent_prompt_codec.py`
 
 ## Resume protocol
 
