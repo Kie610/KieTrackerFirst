@@ -1,156 +1,165 @@
-# KieTrackerFirst handoff
+# KieTrackerFirst 引き継ぎ資料
 
-## 1. Purpose, users, and current capability
+## 1. 目的、利用者、現在の機能
 
-The project is a compact wireless SlimeVR tracker for long VRChat sessions,
-using a Seeed Studio XIAO ESP32-S3 and an LSM6DSV module. The repository is based
-on SlimeVR Tracker ESP firmware. A dedicated board target, checked LSM6DSV
-startup detection, safe I2C scanning, and hardware documentation are included.
+本プロジェクトは、Seeed Studio XIAO ESP32-S3とLSM6DSVモジュールを使用し、
+VRChatの長時間プレイに対応する小型無線SlimeVRトラッカーを開発するものである。
+リポジトリはSlimeVR Tracker ESPファームウェアを基礎としており、専用ボード定義、
+LSM6DSVの起動時検証、安全なI²Cスキャン、ハードウェア手順書を追加済みである。
 
-The intended user is a VRChat player who receives an assembled tracker and
-installs the final battery pack. Battery mechanics and measurement circuitry are
-not yet finalized.
+想定利用者は、組み立て済みトラッカーを受け取り、最後にバッテリーパックを組み込む
+VRChatプレイヤーである。バッテリーの機構設計と電圧測定回路は未確定である。
 
-## 2. Stack and responsibilities
+## 2. 技術構成と各ファイルの責務
 
-- PlatformIO and Arduino-ESP32 build the firmware.
-- `platformio.ini`, `board-defaults.json`, and `board-defaults.schema.json`
-  define the XIAO ESP32-S3 environments and generated board configuration.
-- `src/sensors/softfusion/drivers/lsm6dsv.h` contains the LSM6DSV identity and
-  register configuration.
-- `src/sensorinterface` performs checked I2C register reads.
-- `lib/i2cscan` owns safe discovery and bus recovery.
-- `lib/i2cscan/i2c_safety.h`, `include/sensor_probe.h`, and
-  `include/sensor_address_resolver.h` contain pure, build-testable rules.
-- `docs/xiao-esp32s3-lsm6dsv.md` is the authoritative wiring and hardware-test
-  procedure for this target.
+- PlatformIOとArduino-ESP32でファームウェアをビルドする。
+- `platformio.ini`、`board-defaults.json`、`board-defaults.schema.json` が
+  XIAO ESP32-S3の環境と生成されるボード設定を定義する。
+- `src/sensors/softfusion/drivers/lsm6dsv.h` がLSM6DSVの識別情報と
+  レジスタ設定を保持する。
+- `src/sensorinterface` が診断情報付きI²Cレジスタ読み出しを担当する。
+- `lib/i2cscan` が安全なデバイス検出とバス復旧を担当する。
+- `lib/i2cscan/i2c_safety.h`、`include/sensor_probe.h`、
+  `include/sensor_address_resolver.h` が、ビルド時に検証可能な純粋ルールを保持する。
+- `docs/xiao-esp32s3-lsm6dsv.md` が、この構成における配線と実機テスト手順の
+  authoritative sourceである。
 
-## 3. Invariants and authoritative sources
+## 3. 不変条件と情報源の優先順位
 
-For this target, effective configuration must remain SDA GPIO5, SCL GPIO6,
-address `0x6B`, `WHO_AM_I` register `0x0F`, expected value `0x70`, and production
-clock 100 kHz. No scan path may transmit outside `0x08` through `0x77`.
+この構成では、SDA GPIO5、SCL GPIO6、アドレス `0x6B`、`WHO_AM_I`
+レジスタ `0x0F`、期待値 `0x70`、製品用I²Cクロック100kHzを維持する。
+I²Cスキャン処理は `0x08`～`0x77` の範囲外へ送信してはならない。
 
-Source priority is: physical result supplied by the project owner; ST and Seeed
-official material; SlimeVR official documentation; the module sales/assembly
-guide; existing code assumptions. A lower-priority source must not override the
-confirmed physical result.
+情報源の優先順位は次のとおりである。
 
-## 4. Unknown, failure, and empty meanings
+1. プロジェクト所有者が提示した実機確認結果
+2. STおよびSeeed Studioの公式資料
+3. SlimeVR公式ドキュメント
+4. モジュール販売ページおよび組み立て手順
+5. 既存コード内の仮定
 
-- `ADDRESS_NACK`: the device did not acknowledge its address (`tx=2`).
-- `TRANSMISSION_ERROR`: another non-zero send result.
-- `READ_FAILURE`: send succeeded but the requested byte did not arrive.
-- `WHO_AM_I_MISMATCH`: a complete read returned a value other than `0x70`.
-- All four map to the existing network `SENSOR_ERROR`; serial output retains the
-  detailed cause. No SlimeVR packet format was changed.
-- An unknown pull-up value, battery design, or 400 kHz result is not represented
-  as zero, absent hardware, or a passing test.
+下位の情報源を根拠として、確定済みの実機結果を上書きしてはならない。
 
-## 5. Storage, cache, and schema
+## 4. 未確定、失敗、空状態の意味
 
-No new persistent data or network cache was added. The board-default JSON schema
-contains `BOARD_XIAO_ESP32S3`; `scripts/preprocessor.py` remains the authoritative
-generator for the board macros.
+- `ADDRESS_NACK`: デバイスがアドレスへ応答しなかった状態（`tx=2`）。
+- `TRANSMISSION_ERROR`: 2以外の非ゼロ送信結果。
+- `READ_FAILURE`: 送信は成功したが、要求したバイト数を受信できなかった状態。
+- `WHO_AM_I_MISMATCH`: 読み出しは完了したが、値が `0x70` ではなかった状態。
+- 上記4状態は既存ネットワークプロトコル上では `SENSOR_ERROR` へ集約し、
+  詳細な原因はシリアルログへ残す。SlimeVRのパケット形式は変更していない。
+- プルアップ抵抗値、バッテリー設計、400kHz試験結果などの未知値を、ゼロ、
+  ハードウェアなし、または合格済みとして表現してはならない。
 
-## 6. External communication, security, and privacy
+## 5. 保存、キャッシュ、スキーマ
 
-External behavior remains the upstream SlimeVR firmware behavior. No telemetry,
-credentials, personal data, or new services were introduced. Wi-Fi secrets must
-not be committed to `platformio.ini` or source files.
+新しい永続データやネットワークキャッシュは追加していない。
+ボード既定値のJSON Schemaへ `BOARD_XIAO_ESP32S3` を追加済みであり、
+`scripts/preprocessor.py` がボード用マクロ生成のauthoritative sourceである。
 
-## 7. License and credits
+## 6. 外部通信、セキュリティ、プライバシー
 
-The existing project uses its MIT/Apache-2.0 dual-license contribution policy.
-No third-party source or binary asset was added by this change. Hardware and
-documentation references retain their original ownership.
+外部通信は上流SlimeVRファームウェアの既存動作から変更していない。
+テレメトリ、認証情報、個人情報、新規外部サービスは追加していない。
+Wi-Fi認証情報を `platformio.ini` やソースコードへコミットしてはならない。
 
-## 8. UX and accessibility
+## 7. ライセンスとクレジット
 
-There is no new graphical UI. Diagnostic serial messages use named states and
-numeric I2C evidence rather than color-only output.
+既存プロジェクトのMIT/Apache-2.0デュアルライセンス方針を維持する。
+今回の変更では第三者ソースやバイナリアセットを追加していない。
+参照したハードウェアおよび文書の権利は、それぞれの権利者に帰属する。
 
-## 9. Setup, development, test, build, and release
+## 8. UXとアクセシビリティ
 
-Use VS Code with PlatformIO:
+新しいGUIはない。診断シリアルログは、色だけに依存せず、状態名とI²Cの数値情報で
+結果を伝える。
+
+## 9. セットアップ、開発、テスト、ビルド、リリース
+
+VS CodeのPlatformIOから次のタスクを実行する。
 
 ```text
 PlatformIO: Build -> BOARD_XIAO_ESP32S3
 PlatformIO: Build -> BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC
-PlatformIO: Test  -> BOARD_XIAO_ESP32S3 (contract + hardware suites)
+PlatformIO: Test  -> BOARD_XIAO_ESP32S3（契約テスト＋実機テスト）
 ```
 
-The `test_i2c_contract` suite contains 15 compile-time assertions and is checked
-when the XIAO test firmware is built. The `test_xiao_lsm6dsv_hardware` suite requires
-the tracker. Firmware upload and hardware tests must be initiated through
-PlatformIO in VS Code. Do not claim the power-cycle, 400 kHz, or eight-hour tests
-from compilation alone.
+`test_i2c_contract` スイートには15件のコンパイル時アサーションがあり、XIAO用
+テストファームウェアのビルド時に検証される。`test_xiao_lsm6dsv_hardware`
+スイートの実行にはトラッカー実機が必要である。ファームウェア書き込みと実機テストは
+VS CodeのPlatformIOから行う。コンパイル成功だけを根拠として、電源再投入、400kHz、
+8時間連続試験を合格扱いしてはならない。
 
-Integration evidence from the VS Code PlatformIO Core used by this workspace:
+このワークスペースで使用しているVS Code PlatformIO Coreによる統合検証結果：
 
-- `BOARD_XIAO_ESP32S3` firmware build: PASS; RAM 45,168/327,680 bytes, flash
-  1,148,237/3,342,336 bytes.
-- `BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC` firmware build: PASS; RAM
-  45,168/327,680 bytes, flash 1,148,345/3,342,336 bytes.
-- Production test-firmware compile: PASS; 2 suites collected and built.
-- 400 kHz diagnostic test-firmware compile: PASS; 2 suites collected and built.
-- Shared-code regression builds: `BOARD_WEMOSD1MINI` PASS and
-  `BOARD_XIAO_ESP32C3` PASS.
-- The contract suite compiled all 15 `static_assert` cases in each environment.
-- Runtime Unity cases: not run (`--without-uploading --without-testing`), because
-  this integration did not upload firmware to the tracker.
-- Board generation evidence printed by both builds: SDA 5, SCL 6,
-  `IMU_LSM6DSV`, address 107, INT 255, and `BAT_INTERNAL`.
-- `git diff --check`: PASS. Standalone `clang-format` was unavailable in this
-  Windows environment, so no formatter command was run.
+- `BOARD_XIAO_ESP32S3` ファームウェアビルド: PASS。RAM
+  45,168/327,680 bytes、Flash 1,148,237/3,342,336 bytes。
+- `BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC` ファームウェアビルド: PASS。
+  RAM 45,168/327,680 bytes、Flash 1,148,345/3,342,336 bytes。
+- 製品環境のテストファームウェア・コンパイル: PASS。2スイートを収集・ビルド。
+- 400kHz診断環境のテストファームウェア・コンパイル: PASS。
+  2スイートを収集・ビルド。
+- 共有コードの回帰ビルド: `BOARD_WEMOSD1MINI` PASS、
+  `BOARD_XIAO_ESP32C3` PASS。
+- 契約テストの15件の `static_assert` を両環境でコンパイル済み。
+- Unity実行時テスト: 未実施。`--without-uploading --without-testing` を使用し、
+  実機へ書き込んでいないため。
+- 両ビルドのボード生成ログで、SDA 5、SCL 6、`IMU_LSM6DSV`、address 107、
+  INT 255、`BAT_INTERNAL` を確認済み。
+- `git diff --check`: PASS。
+- このWindows環境では単体の `clang-format` を利用できなかったため、
+  フォーマッタコマンドは未実施。
 
-Release requires all automated checks, the 100 kHz hardware matrix, enclosure
-and battery safety decisions, and a clean targeted diff. Push, merge, publishing,
-and deployment require explicit authorization.
+リリースには、自動検証、100kHz実機試験、筐体・バッテリー安全性の確定、
+対象差分がクリーンであることが必要である。push、merge、公開、deployは明示的な
+許可を得てから行う。
 
-## 10. Git and roles
+## 10. Git、ブランチ、DEV/MERGEの役割
 
-- Working branch at implementation start: `xiao-lsm6dsv`.
-- Base and starting tip: `5e680f7` (`origin/main` at inspection time).
-- DEV implements, documents, tests, and commits related changes.
-- MERGE performs integration tests and only an explicitly authorized push.
+- 実装開始時の作業ブランチ: `xiao-lsm6dsv`
+- 分岐元および実装開始時の先端: `5e680f7`（確認時点の `origin/main`）
+- DEV: 実装、文書、テスト、関連コミットを担当する。
+- MERGE: 統合テストと、明示的に許可されたpushのみを担当する。
 
-The untracked `test/I2C_TEST.cpp` existed before this work and remains untouched.
-It scans `0x01` through `0x7E` and is unsafe for this module. Do not execute,
-stage, overwrite, or treat it as the maintained probe. The maintained suite is
-`pio-test/test_xiao_lsm6dsv_hardware`.
+未追跡の `test/I2C_TEST.cpp` は今回の作業以前から存在し、変更していない。
+このファイルは `0x01`～`0x7E` を走査するため、このモジュールには安全ではない。
+実行、ステージ、上書き、保守対象プローブとしての利用をしてはならない。
+保守対象は `pio-test/test_xiao_lsm6dsv_hardware` である。
 
-Other detached worktrees contain user-owned state. Their uncommitted changes are
-not part of this integration.
+他のdetached worktreeにはユーザー所有の状態が存在する。それらの未コミット変更は
+今回の統合に含めていない。
 
-An initial native-test attempt was abandoned because this Windows installation
-has no host `gcc/g++`, and PlatformIO treated legacy files directly under `test/`
-as shared test sources. The maintained suites were moved to the dedicated
-`pio-test/` directory and the deterministic checks were converted to embedded
-C++20 compile-time assertions. No host compiler installation is required.
+当初のnative testは、このWindows環境のPATHにホスト用 `gcc/g++` が無く、さらに
+PlatformIOが `test/` 直下の旧ファイルを共有テストソースとして扱ったため中止した。
+保守対象スイートを専用の `pio-test/` へ移し、決定的な検証を組み込みC++20の
+コンパイル時アサーションへ変更した。ホスト用コンパイラの追加インストールは不要である。
 
-## 11. Collision-prone areas
+## 11. 並行作業で衝突しやすい領域
 
-Board enumeration, board-default JSON, `platformio.ini`, the generic SoftFusion
-startup path, and the shared I2C scanner affect multiple hardware targets. Keep
-non-XIAO startup clocks unchanged and run regression builds after modifying them.
+ボード番号、ボード既定値JSON、`platformio.ini`、共通SoftFusion起動経路、共通I²C
+スキャナは複数ハードウェアへ影響する。非XIAOボードの起動クロックを変更せず、変更後は
+回帰ビルドを実行する。
 
-## 12. Test truthfulness rules
+## 12. テストの真実性を守る規則
 
-Skipped hardware checks are not passes. Record the exact PlatformIO environment,
-test suite, pass/fail counts, skips, connected hardware, and clock. A successful
-build proves compilation only. A safe scanner test must prove that `0x7E` was
-never addressed, not merely omitted from printed results.
+未実施の実機テストを合格扱いしない。PlatformIO環境、テストスイート、合否件数、
+skip、接続した実機、I²Cクロックを記録する。ビルド成功が証明するのはコンパイル可能性
+だけである。安全スキャナのテストでは、0x7Eを表示しなかっただけでなく、実際に
+0x7Eへ送信していないことを確認する。
 
-## 13. Release conditions
+## 13. リリース条件と手順
 
-Before release: pass native tests and production firmware build; complete 10
-cold power cycles at 100 kHz; resolve battery pack, protection, connector, ADC,
-and enclosure decisions; complete an eight-hour SlimeVR run; and review secrets,
-generated artifacts, licenses, and the final Git diff. The 400 kHz result is
-informational and does not gate a 100 kHz release.
+リリース前に次を完了する。
 
-## 14. Measured technical knowledge
+- 契約テストと製品ファームウェアビルドを通す。
+- 100kHzで完全な電源遮断・再投入を10回行う。
+- バッテリーパック、保護回路、コネクタ、ADC、筐体を確定する。
+- SlimeVR Serverへ接続した8時間連続試験を完了する。
+- 秘密情報、生成物、ライセンス、最終Git差分を確認する。
+
+400kHzの結果は参考情報であり、100kHz製品版のリリース条件にはしない。
+
+## 14. 実測した技術知識
 
 ```text
 --- WHO_AM_I direct read ---
@@ -159,40 +168,39 @@ informational and does not gate a 100 kHz release.
 found: 0x6B
 ```
 
-This physical result confirms the module, 3.3 V supply, GPIO5/GPIO6 wiring,
-0x6B address, and WHO_AM_I read at 100 kHz. A broad `0x01` through `0x7E` scan
-also observed `0x7E`, after which the identity read failed. Treat `0x7E` as an
-I3C reserved/broadcast address, not another I2C peripheral.
+この実機結果により、対象個体のモジュール本体、3.3V電源、GPIO5/GPIO6配線、
+アドレス0x6B、100kHzでのWHO_AM_I読み出しが正常であることを確認した。
+`0x01`～`0x7E` の広範囲スキャンでは0x6Bに加えて0x7Eも検出され、その後の
+WHO_AM_I読み出しが失敗した。0x7Eは別のI²C周辺機器ではなく、I3Cの予約・
+ブロードキャスト用アドレスとして扱う。
 
-## 15. Rejected approaches
+## 15. 却下した案と理由
 
-- Defaulting LSM6DSV to `0x6A`: conflicts with the physical module configured
-  SA0 High at `0x6B`.
-- Deriving the alternate address as `0x6B + 1`: produces invalid `0x6C`; the
-  explicit alternate is `0x6A`.
-- Scanning `0x01` through `0x7E` or `0x7F`: can address I3C-reserved `0x7E` and
-  has already disturbed the following read.
-- Shipping at 400 kHz now: that rate is not yet confirmed on the assembled unit.
+- LSM6DSVの既定値を `0x6A` にする案: SA0 Highで0x6Bとなる実機結果に反する。
+- 代替アドレスを `0x6B + 1` で生成する案: 無効な0x6Cになる。
+  代替アドレスは明示的に0x6Aとする。
+- `0x01`～`0x7E` または0x7Fまで走査する案: I3C予約アドレス0x7Eへ送信し、
+  後続の読み出しを実際に阻害したため。
+- 現時点で400kHzを製品設定にする案: 組み立て済み実機で未確認のため。
 
-## 16. C/A/U, exclusions, and next tasks
+## 16. C/A/U、対象外、次のタスク
 
-`C`: 3.3 V; SDA GPIO5; SCL GPIO6; SA0 High; address `0x6B`; WHO_AM_I
-`0x0F == 0x70`; 100 kHz physical success; unsafe scan failure history.
+`C`（確定）：3.3V、SDA GPIO5、SCL GPIO6、SA0 High、アドレス `0x6B`、
+`WHO_AM_I` の `0x0F == 0x70`、100kHz実機成功、安全でないスキャンの失敗履歴。
 
-`A`: 500 ms power-up delay; production remains at 100 kHz; INT is unused;
-mounting rotation temporarily uses `DEG_0`; battery monitoring is disabled for
-ESP32 by `BAT_INTERNAL` until its circuit is confirmed; detailed errors remain
-serial-only.
+`A`（仮決定）：電源安定待ち500ms、製品設定100kHz、INT未使用、取付回転は暫定
+`DEG_0`、バッテリー回路確定までESP32の測定を `BAT_INTERNAL` で無効相当とする、
+詳細なエラー原因はシリアルログのみで通知する。
 
-`U`: 400 kHz product suitability; module pull-up values; final INT wiring and
-rotation; battery cell, protection, connector, charge-current compatibility,
-ADC divider, enclosure, and final endurance result.
+`U`（未決定）：400kHzの製品適合性、モジュール上のプルアップ抵抗値、最終INT配線、
+取付回転、バッテリーセル、保護回路、コネクタ、充電電流との適合性、ADC分圧、筐体、
+長時間動作の最終結果。
 
-Out of scope for this integration: battery purchase, enclosure CAD, production
-release, push, deployment, and modification of the old untracked probe.
+今回の統合対象外：バッテリー購入、筐体CAD、製品リリース、push、deploy、
+未追跡の旧プローブ変更。
 
-Next tasks are the 100/400 kHz physical matrix, 10 cold cycles, disconnected
-sensor error capture, eight-hour SlimeVR run, and battery/enclosure decisions.
+次のタスク：100/400kHz実機比較、完全な電源再投入10回、センサ切断時のエラーログ取得、
+8時間SlimeVR連続試験、バッテリー・筐体の確定。
 
 ## 17. BATON
 
