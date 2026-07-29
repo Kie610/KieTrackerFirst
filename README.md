@@ -13,6 +13,10 @@ diagnostics guide: [docs/xiao-esp32s3-lsm6dsv.md](docs/xiao-esp32s3-lsm6dsv.md).
 The confirmed production I2C configuration is GPIO5/GPIO6, address `0x6B`, and
 100 kHz. Do not use an I2C scanner that transmits to reserved address `0x7E`.
 
+Development agents use [AGENTS.md](AGENTS.md) for durable repository rules and
+[HANDOFF.agent.md](HANDOFF.agent.md) for current takeover state. The short
+[HANDOFF.md](HANDOFF.md) index links the detailed historical snapshot on demand.
+
 ## Compatibility
 
 The following IMUs and their corresponding `IMU` values are supported by the firmware:
