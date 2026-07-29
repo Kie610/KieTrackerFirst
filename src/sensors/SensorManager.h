@@ -44,7 +44,7 @@ class SensorManager {
 public:
 	SensorManager()
 		: m_Logger(SlimeVR::Logging::Logger("SensorManager")) {}
-	void setup();
+	uint8_t setup();
 	void postSetup();
 
 	void update();

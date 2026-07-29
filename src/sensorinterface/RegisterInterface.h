@@ -28,10 +28,25 @@
 
 namespace SlimeVR::Sensors {
 
+struct RegisterReadResult {
+	uint8_t value = 0;
+	uint8_t endTransmissionCode = 0;
+	uint8_t requestedBytes = 1;
+	uint8_t receivedBytes = 0;
+};
+
 struct RegisterInterface {
 	static constexpr size_t MaxTransactionLength = I2C_BUFFER_LENGTH - 2;
 
 	[[nodiscard]] virtual uint8_t readReg(uint8_t regAddr) const = 0;
+	[[nodiscard]] virtual RegisterReadResult readRegChecked(uint8_t regAddr) const {
+		return {
+			.value = readReg(regAddr),
+			.endTransmissionCode = 0,
+			.requestedBytes = 1,
+			.receivedBytes = 1,
+		};
+	}
 	[[nodiscard]] virtual uint16_t readReg16(uint8_t regAddr) const = 0;
 	virtual void writeReg(uint8_t regAddr, uint8_t value) const = 0;
 	virtual void writeReg16(uint8_t regAddr, uint16_t value) const = 0;

@@ -8,6 +8,11 @@ Requires [SlimeVR Server](https://github.com/SlimeVR/SlimeVR-Server) to work wit
 
 Firmware configuration is located in the `defines.h` file. For more information on how to configure your firmware, refer to the [Configuring the firmware project section of SlimeVR documentation](https://docs.slimevr.dev/firmware/configuring-project.html).
 
+This repository's XIAO ESP32-S3 + LSM6DSV target has a dedicated setup and
+diagnostics guide: [docs/xiao-esp32s3-lsm6dsv.md](docs/xiao-esp32s3-lsm6dsv.md).
+The confirmed production I2C configuration is GPIO5/GPIO6, address `0x6B`, and
+100 kHz. Do not use an I2C scanner that transmits to reserved address `0x7E`.
+
 ## Compatibility
 
 The following IMUs and their corresponding `IMU` values are supported by the firmware:

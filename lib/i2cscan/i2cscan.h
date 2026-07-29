@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include "i2c_safety.h"
+
 namespace I2CSCAN {
     void scani2cports();
     void update();

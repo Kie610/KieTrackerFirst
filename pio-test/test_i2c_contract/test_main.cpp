@@ -1,0 +1,65 @@
+#include <Arduino.h>
+#include <unity.h>
+
+#include "i2c_safety.h"
+#include "sensor_address_resolver.h"
+#include "sensor_probe.h"
+
+using SlimeVR::I2C::isSafeAddress;
+using SlimeVR::Sensors::SensorProbeStatus;
+using SlimeVR::Sensors::classifySensorProbe;
+using SlimeVR::Sensors::resolveSensorAddress;
+
+namespace {
+
+struct Lsm6dsvAddressFixture {
+	static constexpr uint8_t Address = 0x6b;
+	static constexpr uint8_t AlternateAddress = 0x6a;
+};
+
+struct IncrementingAddressFixture {
+	static constexpr uint8_t Address = 0x68;
+};
+
+static_assert(isSafeAddress(0x08));
+static_assert(isSafeAddress(0x77));
+static_assert(!isSafeAddress(0x07));
+static_assert(!isSafeAddress(0x78));
+static_assert(!isSafeAddress(0x7e));
+static_assert(!isSafeAddress(0x7f));
+
+static_assert(classifySensorProbe(0, 1, 1, 0x70, 0x70) == SensorProbeStatus::OK);
+static_assert(
+	classifySensorProbe(2, 1, 0, 0x00, 0x70) == SensorProbeStatus::ADDRESS_NACK
+);
+static_assert(
+	classifySensorProbe(4, 1, 0, 0x00, 0x70)
+	== SensorProbeStatus::TRANSMISSION_ERROR
+);
+static_assert(
+	classifySensorProbe(0, 1, 0, 0x00, 0x70) == SensorProbeStatus::READ_FAILURE
+);
+static_assert(
+	classifySensorProbe(0, 1, 1, 0x69, 0x70)
+	== SensorProbeStatus::WHO_AM_I_MISMATCH
+);
+
+static_assert(resolveSensorAddress<Lsm6dsvAddressFixture>(false) == 0x6b);
+static_assert(resolveSensorAddress<Lsm6dsvAddressFixture>(true) == 0x6a);
+static_assert(resolveSensorAddress<Lsm6dsvAddressFixture>(true) != 0x6c);
+static_assert(resolveSensorAddress<IncrementingAddressFixture>(true) == 0x69);
+
+void testCompileTimeContractsArePresent() {
+	TEST_PASS_MESSAGE("15 I2C compile-time contract cases passed");
+}
+
+}  // namespace
+
+void setup() {
+	delay(2000);
+	UNITY_BEGIN();
+	RUN_TEST(testCompileTimeContractsArePresent);
+	UNITY_END();
+}
+
+void loop() { delay(1000); }

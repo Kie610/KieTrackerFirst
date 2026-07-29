@@ -36,7 +36,7 @@ std::array<SlimeVR::Debugging::Benchmark, 2> sensorLoopBMs{
 };
 SlimeVR::Debugging::Benchmark sensorManagerNetworkingBM{"sensorManager Network"};
 
-void SensorManager::setup() {
+uint8_t SensorManager::setup() {
 	if (m_MCP.begin_I2C()) {
 		m_Logger.info("MCP initialized");
 	}
@@ -53,6 +53,8 @@ void SensorManager::setup() {
 		);
 		I2CSCAN::scani2cports();
 	}
+
+	return activeSensorCount;
 }
 
 void SensorManager::postSetup() {

@@ -18,7 +18,7 @@ namespace I2CSCAN {
 		ScanState scanState = ScanState::IDLE;
     	uint8_t currentSDA = 0;
     	uint8_t currentSCL = 0;
-    	uint8_t currentAddress = 1;
+		uint8_t currentAddress = SlimeVR::I2C::SafeAddressMin;
     	bool found = false;
 		uint8_t txFails = 0;
     	std::vector<uint8_t> validPorts;
@@ -35,6 +35,12 @@ namespace I2CSCAN {
 		std::array<uint8_t, 20> portArray = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 18, 19, 20, 21, 22, 23};
 		std::array<std::string, 20> portMap = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "14", "15", "18", "19", "20", "21", "22", "23"};
 		std::array<uint8_t, 5> portExclude = {12, 13, 16, 17, LED_PIN};
+#elif defined(ESP32S3)
+		// XIAO ESP32-S3: only scan the configured D4/D5 I2C pins. Broad GPIO
+		// probing can disturb unrelated peripherals on a tracker.
+		std::array<uint8_t, 2> portArray = {5, 6};
+		std::array<std::string, 2> portMap = {"D4", "D5"};
+		std::array<uint8_t, 1> portExclude = {LED_PIN};
 #elif defined(ESP32)
 		std::array<uint8_t, 16> portArray = {4, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33};
 		std::array<std::string, 16> portMap = {"4", "13", "14", "15", "16", "17", "18", "19", "21", "22", "23", "25", "26", "27", "32", "33"};
@@ -44,7 +50,12 @@ namespace I2CSCAN {
 		bool selectNextPort() {
 			currentSCL++;
 
-			if(validPorts[currentSCL] == validPorts[currentSDA]) currentSCL++;
+			if (
+				currentSCL < validPorts.size()
+				&& validPorts[currentSCL] == validPorts[currentSDA]
+			) {
+				currentSCL++;
+			}
 
 			if (currentSCL < validPorts.size()) {
 				Wire.begin((int)validPorts[currentSDA], (int)validPorts[currentSCL]); //NOLINT
@@ -111,7 +122,7 @@ namespace I2CSCAN {
         found = false;
         currentSDA = 0;
         currentSCL = 1;
-        currentAddress = 1;
+		currentAddress = SlimeVR::I2C::SafeAddressMin;
 		txFails = 0;
         scanState = ScanState::SCANNING;
 	}
@@ -122,7 +133,7 @@ namespace I2CSCAN {
         }
 
 #ifdef ESP32
-		if (currentAddress == 1) {
+		if (currentAddress == SlimeVR::I2C::SafeAddressMin) {
             Wire.end();
 		}
 #endif
@@ -142,7 +153,7 @@ namespace I2CSCAN {
 
         currentAddress++;
 
-        if (currentAddress <= 127) {
+		if (currentAddress <= SlimeVR::I2C::SafeAddressMax) {
 			if (txFails > 5) {
 #if BOARD == BOARD_SLIMEVR_LEGACY || BOARD == BOARD_SLIMEVR_DEV || BOARD == BOARD_SLIMEVR || BOARD == BOARD_SLIMEVR_V1_2
 				Serial.printf("[ERROR] I2C: Too many transaction errors (%d), please power off the tracker and contact SlimeVR support!\n", txFails);
@@ -154,11 +165,15 @@ namespace I2CSCAN {
             return;
         }
 
-        currentAddress = 1;
+		currentAddress = SlimeVR::I2C::SafeAddressMin;
         selectNextPort();
     }
 
     bool hasDevOnBus(uint8_t addr) {
+		if (!SlimeVR::I2C::isSafeAddress(addr)) {
+			return false;
+		}
+
         byte error;
 #if ESP32C3
         int retries = 2;

@@ -37,7 +37,8 @@ namespace SlimeVR::Sensors::SoftFusion::Drivers {
 // Gyroscope ODR = 240Hz, accel ODR = 120Hz
 
 struct LSM6DSV : LSM6DSOutputHandler {
-	static constexpr uint8_t Address = 0x6a;
+	static constexpr uint8_t Address = 0x6b;
+	static constexpr uint8_t AlternateAddress = 0x6a;
 	static constexpr auto Name = "LSM6DSV";
 	static constexpr auto Type = SensorTypeID::LSM6DSV;
 

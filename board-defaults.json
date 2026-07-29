@@ -547,6 +547,34 @@
 				"shouldOnlyUseDefaults": false
 			}
 		},
+		"BOARD_XIAO_ESP32S3": {
+			"values": {
+				"SENSORS": [
+					{
+						"protocol": "I2C",
+						"imu": "IMU_LSM6DSV",
+						"address": 107,
+						"int": "255",
+						"rotation": "DEG_0",
+						"scl": "6",
+						"sda": "5"
+					}
+				],
+				"BATTERY": {
+					"type": "BAT_INTERNAL"
+				},
+				"LED": {
+					"LED_PIN": "LED_BUILTIN",
+					"LED_INVERTED": true
+				}
+			},
+			"flashingRules": {
+				"applicationOffset": 65536,
+				"needBootPress": false,
+				"needManualReboot": false,
+				"shouldOnlyUseDefaults": false
+			}
+		},
 		"BOARD_ESP32S3_SUPERMINI": {
 			"values": {
 				"SENSORS": [

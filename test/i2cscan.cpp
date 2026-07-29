@@ -8,6 +8,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#include "i2c_safety.h"
+
 #include "configuration/Configuration.h"
 #include "credentials.h"
 #include "helper_3dmath.h"
@@ -25,7 +27,11 @@ void check_if_exist_I2C() {
 	byte error, address;
 	int nDevices;
 	nDevices = 0;
-	for (address = 1; address < 127; address++) {
+	for (
+		address = SlimeVR::I2C::SafeAddressMin;
+		address <= SlimeVR::I2C::SafeAddressMax;
+		address++
+	) {
 		// The i2c_scanner uses the return value of
 		// the Write.endTransmisstion to see if
 		// a device did acknowledge to the address.

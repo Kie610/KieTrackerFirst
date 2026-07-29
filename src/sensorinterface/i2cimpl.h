@@ -42,6 +42,26 @@ struct I2CImpl : public RegisterInterface {
 		return buffer;
 	}
 
+	RegisterReadResult readRegChecked(uint8_t regAddr) const override {
+		RegisterReadResult result;
+
+		Wire.beginTransmission(m_devAddr);
+		Wire.write(regAddr);
+		result.endTransmissionCode = Wire.endTransmission(false);
+		if (result.endTransmissionCode != 0) {
+			return result;
+		}
+
+		result.receivedBytes
+			= Wire.requestFrom(m_devAddr, result.requestedBytes);
+		if (result.receivedBytes < result.requestedBytes || !Wire.available()) {
+			result.receivedBytes = 0;
+			return result;
+		}
+		result.value = Wire.read();
+		return result;
+	}
+
 	uint16_t readReg16(uint8_t regAddr) const override {
 		uint16_t buffer = 0;
 		I2Cdev::readBytes(

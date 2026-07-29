@@ -40,6 +40,7 @@
 #include "mpu6050sensor.h"
 #include "mpu9250sensor.h"
 #include "sensor.h"
+#include "sensor_address_resolver.h"
 #include "sensorinterface/DirectPinInterface.h"
 #include "sensorinterface/DirectSPIInterface.h"
 #include "sensorinterface/I2CPCAInterface.h"
@@ -194,8 +195,7 @@ public:
 				access
 			);
 		} else if constexpr (std::is_same_v<AccessInterface, bool>) {
-			uint8_t addressIncrement = access ? 1 : 0;
-			return interfaceManager.i2cImpl().get(Sensor::Address + addressIncrement);
+			return interfaceManager.i2cImpl().get(resolveSensorAddress<Sensor>(access));
 		} else if constexpr (std::is_integral_v<AccessInterface>) {
 			return interfaceManager.i2cImpl().get(access);
 		}
@@ -319,7 +319,13 @@ public:
 		sensorDef.sensorInterface->init();
 		sensorDef.sensorInterface->swapIn();
 
-		if (!sensorDef.imuInterface.hasSensorOnBus()) {
+		constexpr bool performsCheckedDetection = []() constexpr {
+			if constexpr (requires { ImuType::PerformsCheckedDetection; }) {
+				return ImuType::PerformsCheckedDetection;
+			}
+			return false;
+		}();
+		if (!performsCheckedDetection && !sensorDef.imuInterface.hasSensorOnBus()) {
 			if (!sensorDef.optional) {
 				m_Manager->m_Logger.error(
 					"Mandatory sensor %d not found at address %s",

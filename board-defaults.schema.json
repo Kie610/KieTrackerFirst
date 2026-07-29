@@ -117,6 +117,7 @@
 				"BOARD_ESP32C6DEVKITC1",
 				"BOARD_WEMOSWROOM02",
 				"BOARD_XIAO_ESP32C3",
+				"BOARD_XIAO_ESP32S3",
 				"BOARD_ESP32S3_SUPERMINI"
 			],
 			"description": "Board Type"

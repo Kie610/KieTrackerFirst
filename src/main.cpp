@@ -141,12 +141,20 @@ void setup() {
 #ifdef ESP32  // Counterpart on ESP32 to ClockStretchLimit
 	Wire.setTimeOut(150);
 #endif
-	Wire.setClock(I2C_SPEED);
+	SlimeVR::setI2CSpeed(I2C_STARTUP_SPEED);
 
 	// Wait for IMU to boot
 	delay(500);
 
-	sensorManager.setup();
+	const auto activeSensorCount = sensorManager.setup();
+	if (activeSensorCount > 0 && I2C_SPEED != I2C_STARTUP_SPEED) {
+		logger.info(
+			"I2C startup validation passed at %u Hz; switching to %u Hz",
+			I2C_STARTUP_SPEED,
+			I2C_SPEED
+		);
+		SlimeVR::setI2CSpeed(I2C_SPEED);
+	}
 
 	networkManager.setup();
 	OTA::otaSetup(otaPassword);

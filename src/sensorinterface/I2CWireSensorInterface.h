@@ -33,6 +33,8 @@
 namespace SlimeVR {
 void swapI2C(uint8_t sclPin, uint8_t sdaPin);
 void disconnectI2C();
+void setI2CSpeed(uint32_t speed);
+[[nodiscard]] uint32_t getI2CSpeed();
 
 /**
  * I2C Sensor interface using direct arduino Wire on provided pins

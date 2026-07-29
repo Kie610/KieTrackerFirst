@@ -32,8 +32,16 @@
 std::optional<uint8_t> activeSCLPin;
 std::optional<uint8_t> activeSDAPin;
 bool isI2CActive = false;
+uint32_t activeI2CSpeed = I2C_STARTUP_SPEED;
 
 namespace SlimeVR {
+void setI2CSpeed(uint32_t speed) {
+	activeI2CSpeed = speed;
+	Wire.setClock(activeI2CSpeed);
+}
+
+uint32_t getI2CSpeed() { return activeI2CSpeed; }
+
 void swapI2C(uint8_t sclPin, uint8_t sdaPin) {
 	if (sclPin != activeSCLPin || sdaPin != activeSDAPin || !isI2CActive) {
 		Wire.flush();
@@ -52,7 +60,11 @@ void swapI2C(uint8_t sclPin, uint8_t sdaPin) {
 		if (isI2CActive) {
 			i2c_set_pin(I2C_NUM_0, sdaPin, sclPin, false, false, I2C_MODE_MASTER);
 		} else {
-			Wire.begin(static_cast<int>(sdaPin), static_cast<int>(sclPin), I2C_SPEED);
+			Wire.begin(
+				static_cast<int>(sdaPin),
+				static_cast<int>(sclPin),
+				activeI2CSpeed
+			);
 			Wire.setTimeOut(150);
 		}
 #else
@@ -62,6 +74,7 @@ void swapI2C(uint8_t sclPin, uint8_t sdaPin) {
 		activeSCLPin = sclPin;
 		activeSDAPin = sdaPin;
 		isI2CActive = true;
+		Wire.setClock(activeI2CSpeed);
 	}
 }
 

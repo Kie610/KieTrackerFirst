@@ -37,6 +37,7 @@
 #include "motionprocessing/types.h"
 #include "sensors/SensorFusion.h"
 #include "sensors/softfusion/magdriver.h"
+#include "sensor_probe.h"
 
 namespace SlimeVR::Sensors {
 
@@ -52,8 +53,28 @@ class SoftFusionSensor : public Sensor {
 	uint32_t lastTempPollTime = micros();
 
 	bool detected() const {
-		const auto value
-			= m_sensor.m_RegisterInterface.readReg(SensorType::Regs::WhoAmI::reg);
+		const auto result = m_sensor.m_RegisterInterface.readRegChecked(
+			SensorType::Regs::WhoAmI::reg
+		);
+		const auto transportStatus = classifySensorTransport(
+			result.endTransmissionCode,
+			result.requestedBytes,
+			result.receivedBytes
+		);
+		if (transportStatus != SensorProbeStatus::OK) {
+			m_Logger.error(
+				"Sensor probe %s at address 0x%02x reg 0x%02x: tx=%u rx=%u/%u",
+				sensorProbeStatusName(transportStatus),
+				m_sensor.m_RegisterInterface.getAddress(),
+				SensorType::Regs::WhoAmI::reg,
+				result.endTransmissionCode,
+				result.receivedBytes,
+				result.requestedBytes
+			);
+			return false;
+		}
+
+		const auto value = result.value;
 		if constexpr (requires { SensorType::Regs::WhoAmI::values.size(); }) {
 			for (auto possible : SensorType::Regs::WhoAmI::values) {
 				if (value == possible) {
@@ -62,12 +83,16 @@ class SoftFusionSensor : public Sensor {
 			}
 			// this assumes there are only 2 values in the array
 			m_Logger.error(
-				"Sensor not detected, expected reg 0x%02x = [0x%02x, 0x%02x] but got "
-				"0x%02x",
+				"Sensor probe WHO_AM_I_MISMATCH at address 0x%02x: expected reg "
+				"0x%02x = [0x%02x, 0x%02x] but got 0x%02x (tx=%u rx=%u/%u)",
+				m_sensor.m_RegisterInterface.getAddress(),
 				SensorType::Regs::WhoAmI::reg,
 				SensorType::Regs::WhoAmI::values[0],
 				SensorType::Regs::WhoAmI::values[1],
-				value
+				value,
+				result.endTransmissionCode,
+				result.receivedBytes,
+				result.requestedBytes
 			);
 			return false;
 		} else {
@@ -75,10 +100,15 @@ class SoftFusionSensor : public Sensor {
 				return true;
 			}
 			m_Logger.error(
-				"Sensor not detected, expected reg 0x%02x = 0x%02x but got 0x%02x",
+				"Sensor probe WHO_AM_I_MISMATCH at address 0x%02x: expected reg "
+				"0x%02x = 0x%02x but got 0x%02x (tx=%u rx=%u/%u)",
+				m_sensor.m_RegisterInterface.getAddress(),
 				SensorType::Regs::WhoAmI::reg,
 				SensorType::Regs::WhoAmI::value,
-				value
+				value,
+				result.endTransmissionCode,
+				result.receivedBytes,
+				result.requestedBytes
 			);
 			return false;
 		}
@@ -153,6 +183,13 @@ class SoftFusionSensor : public Sensor {
 public:
 	static constexpr auto TypeID = SensorType::Type;
 	static constexpr uint8_t Address = SensorType::Address;
+	static constexpr bool PerformsCheckedDetection = true;
+	static constexpr uint8_t AlternateAddress = []() constexpr {
+		if constexpr (requires { SensorType::AlternateAddress; }) {
+			return SensorType::AlternateAddress;
+		}
+		return static_cast<uint8_t>(SensorType::Address + 1);
+	}();
 
 	SoftFusionSensor(
 		uint8_t id,
