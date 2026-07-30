@@ -4,9 +4,9 @@ updated: 2026-07-30
 repo: Kie610/KieTrackerFirst
 primary_branch: xiao-lsm6dsv
 fork_source: upstream = SlimeVR/SlimeVR-Tracker-ESP, mirrored by `main` only
-work_branch: codex/xiao-lsm6dsv-handoff
-upstream: origin/codex/xiao-lsm6dsv-handoff
-base: origin/xiao-lsm6dsv@cbd5274
+work_branch: claude/dev-handoff-278b77 (worktree `.claude/worktrees/dev-handoff-278b77`)
+upstream: none; earlier work branch `codex/xiao-lsm6dsv-handoff`@a08c0ac matches `origin/codex/xiao-lsm6dsv-handoff`
+base: origin/xiao-lsm6dsv@84f6bb3
 goal: XIAO ESP32-S3 + LSM6DSV small wireless SlimeVR tracker
 
 ## State
@@ -26,7 +26,10 @@ verified:
 - C: 2026-07-30 — evidence: status=PASS; kind=hardware/runtime; command=reset capture, owner motion test, and 10-minute GUI measurement; environment=Windows, SlimeVR v20.1.0, XIAO ESP32-S3 + LSM6DSV, COM6, 100 kHz; scope=rest calibration at 28.3--29.1 C, Server/Preview, `DEG_0`, 0% loss, heading 41.48 to 41.47 degrees; counts=passed=14, failed=0, skipped=1 six-face calibration, not-run=0
 - C: 2026-07-30 — evidence: status=PASS; kind=build; command=the four required firmware environments and both XIAO test suites with `--without-uploading --without-testing`, plus `git diff --check`; environment=Windows/PlatformIO, no hardware connected, no I2C clock applied; scope=re-verification at `xiao-lsm6dsv`@a08c0ac before the integration check, compilation only with 0 executed test cases; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
 
+- C: 2026-07-30 — evidence: status=PASS; kind=build; command=`run -e BOARD_XIAO_ESP32S3`, `run -e BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC`, `run -e BOARD_WEMOSD1MINI -e BOARD_XIAO_ESP32C3`, `test -e BOARD_XIAO_ESP32S3 -e BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC --without-uploading --without-testing`, `git diff --check`; environment=Windows/PlatformIO, worktree `.claude/worktrees/dev-handoff-278b77`@84f6bb3, no hardware connected, no I2C clock applied; scope=takeover re-verification at `xiao-lsm6dsv`@84f6bb3 (only docs commits 1153ef1/84f6bb3 above the previously verified a08c0ac), compilation only, 0 executed test cases, `git diff --check` clean; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
+
 not-run:
+- U: U5 no serial port is enumerated on this PC (`[System.IO.Ports.SerialPort]::getportnames()` returned empty on 2026-07-30), so every remaining `Next` hardware item is waiting on the tracker being connected to a data-capable USB port, not on code work.
 - U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure requirements remain unresolved.
 - U: U3 400 kHz hardware comparison, ten power-removal cycles, detailed disconnected-sensor logs, and 8-hour endurance remain not run.
 - U: U4 the `0df3` codex worktree holds an uncommitted `README.md` draft at 5e680f7 that states address `0x6A`. It was deliberately left untouched and must not be merged: `README.md` on `xiao-lsm6dsv` already documents the confirmed `0x6B`/100 kHz configuration. Merging requires correcting the draft to `0x6B` first.
@@ -42,8 +45,8 @@ not-run:
 
 ## Next
 
-- Run ten complete power-removal cycles at 100 kHz and record every address/identity result; blocked-by: none
-- Capture address NACK, transmission error, read failure, and identity mismatch logs; blocked-by: none
+- Run ten complete power-removal cycles at 100 kHz and record every address/identity result; blocked-by: U5
+- Capture address NACK, transmission error, read failure, and identity mismatch logs (per `docs/xiao-esp32s3-lsm6dsv.md` the mismatch and short-read paths stay contract-test-only; capture NACK by disconnecting the module); blocked-by: U5
 - Run the optional 400 kHz comparison without promoting it to production; blocked-by: U3
 - Run the 8-hour endurance test; blocked-by: U3
 - Resolve battery and enclosure requirements before release; blocked-by: U2
