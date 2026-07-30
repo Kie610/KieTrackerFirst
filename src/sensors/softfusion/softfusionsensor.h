@@ -78,6 +78,17 @@ class SoftFusionSensor : public Sensor {
 		if constexpr (requires { SensorType::Regs::WhoAmI::values.size(); }) {
 			for (auto possible : SensorType::Regs::WhoAmI::values) {
 				if (value == possible) {
+					m_Logger.info(
+						"Connected to %s at address 0x%02x (WHO_AM_I reg 0x%02x = "
+						"0x%02x, tx=%u rx=%u/%u)",
+						SensorType::Name,
+						m_sensor.m_RegisterInterface.getAddress(),
+						SensorType::Regs::WhoAmI::reg,
+						value,
+						result.endTransmissionCode,
+						result.receivedBytes,
+						result.requestedBytes
+					);
 					return true;
 				}
 			}
@@ -97,6 +108,17 @@ class SoftFusionSensor : public Sensor {
 			return false;
 		} else {
 			if (value == SensorType::Regs::WhoAmI::value) {
+				m_Logger.info(
+					"Connected to %s at address 0x%02x (WHO_AM_I reg 0x%02x = "
+					"0x%02x, tx=%u rx=%u/%u)",
+					SensorType::Name,
+					m_sensor.m_RegisterInterface.getAddress(),
+					SensorType::Regs::WhoAmI::reg,
+					value,
+					result.endTransmissionCode,
+					result.receivedBytes,
+					result.requestedBytes
+				);
 				return true;
 			}
 			m_Logger.error(

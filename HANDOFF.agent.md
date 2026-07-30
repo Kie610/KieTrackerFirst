@@ -1,91 +1,54 @@
 # Agent handoff v1
 
-updated: 2026-07-29
+updated: 2026-07-30
 repo: Kie610/KieTrackerFirst
 work_branch: codex/xiao-lsm6dsv-handoff
-upstream: origin/xiao-lsm6dsv@cbd5274
-base: origin/main@5e680f7
+upstream: origin/codex/xiao-lsm6dsv-handoff
+base: origin/xiao-lsm6dsv@cbd5274
 goal: XIAO ESP32-S3 + LSM6DSV small wireless SlimeVR tracker
 
 ## State
 
 complete:
-- XIAO board definitions and generated defaults
-- LSM6DSV startup validation and diagnostic failures
-- safe I2C scan and bus recovery
-- compile-time I2C contract checks
-- wiring and hardware-test procedure
-- token-efficient Codex/Claude instruction and handoff layers
+- C: XIAO defaults generate `IMU_LSM6DSV` at `0x6B`/`DEG_0`, GPIO5/6/4/2/1, `BAT_INTERNAL`, and 180/100/220; startup validation, safe I2C handling, contracts, and wiring procedure are implemented.
+- C: No Wi-Fi credentials are tracked; runtime provisioning is required.
+- C: Production logs the XIAO/I2C identity and successful WHO_AM_I probe after a bounded USB-CDC wait; the fallback scanner starts/restores at 100 kHz and never reverses XIAO GPIO5/6.
+- C: Milestone M3 is achieved: SlimeVR Server receives the tracker and the live IMU Preview follows physical movement.
 
-verified-2026-07-29:
-- `BOARD_XIAO_ESP32S3` firmware compile PASS; RAM 45168/327680; Flash 1148253/3342336
-- `BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC` compile PASS; RAM 45168/327680; Flash 1148361/3342336
-- regression compile PASS: `BOARD_WEMOSD1MINI`, `BOARD_XIAO_ESP32C3`
-- test-firmware compile PASS: 2 environments x 2 suites; runtime cases 0 because upload/testing disabled
-- contract `static_assert` count: 15
-- `git diff --check` PASS
-- serial devices detected: none
-- historical handoff preserved with Git blob `5791de8427f943984ebb6cbcd029383dfe4c42e6`
-
-hardware-confirmed:
-- 3.3 V; SDA GPIO5; SCL GPIO6; SA0 High; address `0x6B`
-- 100 kHz direct read: register `0x0F` = `0x70`
-- safe scan found `0x6B`
-- unsafe scan touched `0x7E` and disrupted the following read; treat `0x7E` as reserved
+verified:
+- C: 2026-07-30 — evidence: status=PASS; kind=hardware; command=Arduino IDE 2.3.10 upload and serial monitor; environment=Windows, XIAO ESP32-S3 on direct USB COM6, corrected LSM6DSV wiring, I2C 100 kHz; scope=direct `0x6B` WHO_AM_I read returned `0x70` and safe `0x08..0x77` scan found only `0x6B`; counts=passed=2, failed=0, skipped=0, not-run=0
+- C: 2026-07-30 — evidence: status=PASS; kind=build; command=all four required firmware environments and both XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19; scope=compilation only; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
+- C: 2026-07-30 — evidence: status=PASS; kind=hardware/runtime; command=VSCode Upload, reset capture, owner-operated Preview test, and SlimeVR GUI inspection; environment=Windows, SlimeVR v20.1.0, XIAO ESP32-S3 + LSM6DSV, direct USB COM6, I2C 100 kHz; scope=flash, `0x6B` WHO_AM_I `0x70`, Wi-Fi, Server connection, live packets, 0% loss, and movement-following 3D Preview; counts=passed=11, failed=0, skipped=0, not-run=0
 
 not-run:
-- Unity runtime tests
-- 100/400 kHz hardware comparison
-- full power removal/restart x10
-- disconnected-sensor log capture
-- 8-hour SlimeVR Server endurance test
+- U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure requirements remain unresolved.
+- U: U3 400 kHz hardware comparison, ten power-removal cycles, detailed disconnected-sensor logs, and 8-hour endurance remain not run.
 
 ## Decisions
 
-C:
-- 3.3 V; GPIO5/GPIO6; SA0 High; `0x6B`; `0x0F == 0x70`; 100 kHz hardware success
-- scan range `0x08..0x77`; never transmit to `0x7E`
-
-A:
-- startup wait 500 ms; production 100 kHz; INT unused; rotation `DEG_0`
-- battery measurement disabled-equivalent with `BAT_INTERNAL`
-- detailed failure cause is serial-only; network remains `SENSOR_ERROR`
-
-U:
-- production suitability of 400 kHz; module pull-up resistance; final INT and rotation
-- cell, protection, connector, charge-current compatibility, ADC divider, enclosure
-- final endurance result
+- C: Use 3.3 V, SDA GPIO5, SCL GPIO6, SA0 High, address `0x6B`, `WHO_AM_I` register `0x0F == 0x70`, and scan only `0x08..0x77`.
+- C: Keep production I2C at 100 kHz; never transmit to reserved address `0x7E`; use `0x6A` as the explicit alternate address.
+- C: Preserve the network packet format; map probe failures to `SENSOR_ERROR` and log the detailed cause over serial.
+- A: Startup wait 500 ms and rotation `DEG_0` remain provisional; INT assignments are unused and the battery circuit remains unvalidated.
 
 ## Next
 
-1. Connect the tracker by USB and identify the serial port.
-2. Run the 100/400 kHz hardware comparison without promoting 400 kHz to production.
-3. Run ten complete 100 kHz power-removal/restart cycles.
-4. Capture logs for address NACK, transmission error, read failure, and identity mismatch when feasible.
-5. Complete the 8-hour SlimeVR Server test.
-6. Resolve battery and enclosure requirements before release.
-
-blocked-by:
-- connected tracker hardware
-- final battery and enclosure requirements
+- Run ten complete power-removal cycles at 100 kHz and record every address/identity result; blocked-by: none
+- Capture address NACK, transmission error, read failure, and identity mismatch logs; blocked-by: none
+- Run the optional 400 kHz comparison without promoting it to production; blocked-by: U3
+- Run the 8-hour endurance test; blocked-by: U3
+- Resolve battery and enclosure requirements before release; blocked-by: U2
 
 ## Paths
 
-- procedure: `docs/xiao-esp32s3-lsm6dsv.md`
-- history/rationale: `docs/handoff-history.md`
-- environments: `platformio.ini`, `board-defaults.json`, `board-defaults.schema.json`
-- sensor startup: `src/sensors/softfusion/softfusionsensor.h`
-- driver identity: `src/sensors/softfusion/drivers/lsm6dsv.h`
-- safe scan: `lib/i2cscan/`
-- contract tests: `pio-test/test_i2c_contract/test_main.cpp`
-- hardware tests: `pio-test/test_xiao_lsm6dsv_hardware/test_main.cpp`
-- forbidden legacy probe: `test/I2C_TEST.cpp`
+- C: procedure/history: `docs/xiao-esp32s3-lsm6dsv.md`, `docs/handoff-history.md`
+- C: configuration/driver: `platformio.ini`, `board-defaults.json`, `src/sensors/softfusion/`, `lib/i2cscan/`
+- C: tests: `pio-test/test_i2c_contract/test_main.cpp`, `pio-test/test_xiao_lsm6dsv_hardware/test_main.cpp`
+- C: forbidden legacy probe: `test/I2C_TEST.cpp`
 
 ## Resume protocol
 
 1. Read `AGENTS.md` and this file.
-2. Run `git status --short --branch` and `git log -1 --oneline --decorate`; prefer live Git state over recorded branch metadata.
-3. Read only the paths needed for the first executable `Next` item.
-4. Run non-hardware baseline checks before changing shared code.
-5. Start the highest-priority unblocked item; otherwise report the exact external input required.
-6. Update this file with evidence; never convert `not-run` into PASS without execution.
+2. Recheck Git branch, HEAD, worktree, upstream, connected serial hardware, and current tests; prefer live evidence.
+3. Run the smallest relevant checks, then start the first unblocked `Next` item.
+4. Update this file with exact evidence; never promote compile success to runtime or hardware PASS.

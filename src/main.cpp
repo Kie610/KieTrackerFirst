@@ -68,6 +68,14 @@ TPSCounter tpsCounter;
 
 void setup() {
 	Serial.begin(serialBaudRate);
+#if BOARD == BOARD_XIAO_ESP32S3
+	// Native USB CDC can enumerate after setup() starts. Keep this bounded so a
+	// tracker still boots when no serial monitor is attached.
+	const uint32_t serialAttachStartedAt = millis();
+	while (!Serial && millis() - serialAttachStartedAt < 2000) {
+		delay(10);
+	}
+#endif
 	globalTimer = timer_create_default();
 
 	Serial.println();
@@ -75,6 +83,16 @@ void setup() {
 	Serial.println();
 
 	logger.info("SlimeVR v" FIRMWARE_VERSION " starting up...");
+#if BOARD == BOARD_XIAO_ESP32S3
+	logger.info(
+		"Board: XIAO ESP32-S3 (%d), I2C SDA=%d SCL=%d, startup=%u Hz, runtime=%u Hz",
+		BOARD,
+		PIN_IMU_SDA,
+		PIN_IMU_SCL,
+		I2C_STARTUP_SPEED,
+		I2C_SPEED
+	);
+#endif
 
 	char vendorBuffer[512];
 	size_t writtenLength;

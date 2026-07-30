@@ -47,7 +47,35 @@ namespace I2CSCAN {
 		std::array<uint8_t, 1> portExclude = {LED_PIN};
 #endif
 
+		void beginCurrentPort() {
+#ifdef ESP32
+			Wire.end();
+#endif
+			Wire.begin(
+				static_cast<int>(validPorts[currentSDA]),
+				static_cast<int>(validPorts[currentSCL])
+			);
+			Wire.setClock(I2C_STARTUP_SPEED);
+		}
+
+		void finishScan() {
+			if (!found) {
+				Serial.println("[ERROR] I2C: No I2C devices found"); //NOLINT
+			}
+#ifdef ESP32
+			Wire.end();
+#endif
+			Wire.begin(static_cast<int>(PIN_IMU_SDA), static_cast<int>(PIN_IMU_SCL));
+			Wire.setClock(I2C_STARTUP_SPEED);
+			scanState = ScanState::DONE;
+		}
+
 		bool selectNextPort() {
+#if BOARD == BOARD_XIAO_ESP32S3
+			// The XIAO wiring is fixed. Do not probe the D4/D5 pair in reverse.
+			finishScan();
+			return false;
+#else
 			currentSCL++;
 
 			if (
@@ -58,7 +86,7 @@ namespace I2CSCAN {
 			}
 
 			if (currentSCL < validPorts.size()) {
-				Wire.begin((int)validPorts[currentSDA], (int)validPorts[currentSCL]); //NOLINT
+				beginCurrentPort();
 				return true;
 			}
 
@@ -66,19 +94,13 @@ namespace I2CSCAN {
 			currentSDA++;
 
 			if (currentSDA >= validPorts.size()) {
-				if (!found) {
-					Serial.println("[ERROR] I2C: No I2C devices found"); //NOLINT
-				}
-	#ifdef ESP32
-				Wire.end();
-	#endif
-				Wire.begin(static_cast<int>(PIN_IMU_SDA), static_cast<int>(PIN_IMU_SCL));
-				scanState = ScanState::DONE;
+				finishScan();
 				return false;
 			}
 
-			Wire.begin((int)validPorts[currentSDA], (int)validPorts[currentSCL]);
+			beginCurrentPort();
 			return true;
+#endif
 		}
 		template <uint8_t size1, uint8_t size2>
 		uint8_t countCommonElements(
@@ -117,6 +139,11 @@ namespace I2CSCAN {
 				validPorts.push_back(port); // Port is valid, add it to the list
 			}
 		}
+		if (validPorts.size() < 2) {
+			Serial.println("[ERROR] I2C: Not enough valid pins to scan"); //NOLINT
+			scanState = ScanState::DONE;
+			return;
+		}
 
 		// Reset scan variables and start scanning
         found = false;
@@ -125,18 +152,13 @@ namespace I2CSCAN {
 		currentAddress = SlimeVR::I2C::SafeAddressMin;
 		txFails = 0;
         scanState = ScanState::SCANNING;
+		beginCurrentPort();
 	}
 
     void update() {
         if (scanState != ScanState::SCANNING) {
             return;
         }
-
-#ifdef ESP32
-		if (currentAddress == SlimeVR::I2C::SafeAddressMin) {
-            Wire.end();
-		}
-#endif
 
         Wire.beginTransmission(currentAddress);
         const uint8_t error = Wire.endTransmission();

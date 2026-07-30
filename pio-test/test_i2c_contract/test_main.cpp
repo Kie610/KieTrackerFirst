@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
+#include "consts.h"
 #include "i2c_safety.h"
 #include "sensor_address_resolver.h"
 #include "sensor_probe.h"
@@ -49,8 +50,26 @@ static_assert(resolveSensorAddress<Lsm6dsvAddressFixture>(true) == 0x6a);
 static_assert(resolveSensorAddress<Lsm6dsvAddressFixture>(true) != 0x6c);
 static_assert(resolveSensorAddress<IncrementingAddressFixture>(true) == 0x69);
 
+#if BOARD == BOARD_XIAO_ESP32S3
+static_assert(PIN_IMU_SDA == 5);
+static_assert(PIN_IMU_SCL == 6);
+static_assert(PIN_IMU_INT == 4);
+static_assert(PIN_IMU_INT_2 == 2);
+static_assert(PIN_BATTERY_LEVEL == 1);
+static_assert(BATTERY_MONITOR == BAT_INTERNAL);
+static_assert(BATTERY_SHIELD_RESISTANCE == 180);
+static_assert(BATTERY_SHIELD_R1 == 100);
+static_assert(BATTERY_SHIELD_R2 == 220);
+static_assert(BOARD == BOARD_XIAO_ESP32S3);
+static_assert(I2C_STARTUP_SPEED == 100000);
+static_assert(I2C_SPEED == 100000 || I2C_SPEED == 400000);
+#endif
+
 void testCompileTimeContractsArePresent() {
-	TEST_PASS_MESSAGE("15 I2C compile-time contract cases passed");
+	TEST_ASSERT_TRUE_MESSAGE(
+		true,
+		"27 I2C and XIAO configuration contract cases passed"
+	);
 }
 
 }  // namespace

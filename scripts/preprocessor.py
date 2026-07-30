@@ -104,7 +104,7 @@ def _build_board_flags(defaults: dict, board_name: str) -> List[str]:
 
         add('PIN_IMU_SDA', 255, 'pin') # FIXME fix the I2C Scanner so it use the sensor list and not be called when no I2C sensor
         add('PIN_IMU_SCL', 255, 'pin')
-        add('PIN_IMU_INT_2', 255, 'pin') # FIXME: fix the CONFIG serial command so it use the sensor list
+        add('PIN_IMU_INT_2', values.get('PIN_IMU_INT_2', 255), 'pin') # FIXME: fix the CONFIG serial command so it use the sensor list
 
         for index, sensor in enumerate(sensors):
             if sensor.get('protocol') == 'I2C':

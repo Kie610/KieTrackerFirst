@@ -12,6 +12,9 @@ server procedures are in the [SlimeVR documentation](https://docs.slimevr.dev/).
 | GND | GND | Common ground |
 | SDA | D4 / GPIO5 | Pull up to 3.3 V |
 | SCL | D5 / GPIO6 | Pull up to 3.3 V |
+| IMU INT | D3 / GPIO4 | Defined for this target; not connected or used by LSM6DSV SoftFusion yet |
+| AUX IMU INT | D1 / GPIO2 | Reserved; no auxiliary IMU is installed |
+| Battery ADC | D0 / GPIO1 | Reserved for the later battery build; unused in USB-powered mode |
 | SDO / SA0 | High | Selects I2C address `0x6B` |
 | CS / CSB | High | Required for I2C operation |
 
@@ -20,8 +23,23 @@ must provide SDA/SCL pull-ups to 3.3 V. Whether the purchased module already
 contains suitable pull-ups, and their values, has not yet been confirmed from a
 schematic; do not rely on that assumption in a production circuit.
 
-The interrupt pins are not connected in the current configuration. Sensor
-mounting rotation and battery-voltage measurement are also still undecided.
+The configured interrupt pins are not physically connected in the current
+hardware, and the LSM6DSV SoftFusion path does not use them. Sensor mounting
+rotation and battery-voltage measurement are also still undecided.
+
+## Firmware defaults
+
+`board-defaults.json` is the source for the generated XIAO build flags; do not
+replace the dedicated target with the older generic `BOARD_CUSTOM` path.
+
+- board: `BOARD_XIAO_ESP32S3`
+- primary IMU: `IMU_LSM6DSV` at `0x6B`, provisional rotation `DEG_0`
+- common pins: SDA GPIO5, SCL GPIO6, IMU INT GPIO4, AUX INT GPIO2, battery ADC GPIO1
+- USB-powered monitoring: `BAT_INTERNAL`, shield resistance 180, R1 100, R2 220
+
+`BAT_INTERNAL` prevents external battery-ADC sampling in the current USB-powered
+build. GPIO1 and the resistor values are reserved for the later battery design;
+they do not constitute a validated battery circuit.
 
 ## Confirmed identity
 
@@ -77,6 +95,15 @@ Use the PlatformIO project tasks in VS Code:
 The hardware test suite is `test_xiao_lsm6dsv_hardware`. It performs the direct
 identity read before the safe scan. Uploading and serial execution must be done
 from the VS Code PlatformIO Test task with the tracker connected.
+
+Connect the XIAO directly to the PC with a data-capable USB cable; do not use a
+hub while diagnosing upload or serial enumeration. In VS Code run `PlatformIO:
+Set Project Port (upload/monitor/test)` and select the detected COM port before
+starting the test. The hardware-test firmware waits for the native USB CDC
+port briefly before emitting Unity output, so do not press RESET after an
+automatic upload from normally running firmware. If automatic upload cannot enter the
+bootloader, hold BOOT, press and release RESET, release BOOT, upload, and then
+press RESET once to start the flashed firmware.
 
 ## Hardware acceptance tests
 

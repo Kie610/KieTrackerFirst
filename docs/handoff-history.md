@@ -212,3 +212,17 @@ WHO_AM_I読み出しが失敗した。0x7Eは別のI²C周辺機器ではなく�
 テスト: firmware build 2/2 PASS、test-firmware compile 4/4 suites PASS、15件の契約assertを両環境で評価、実機Unity/power-cycle/8時間は未実施
 注意点: test/I2C_TEST.cppは所有者不明の未追跡・危険な旧スキャナのため未変更。pushなし
 ```
+# 2026-07-30 defines.h-equivalent target configuration
+
+The repository now expresses the chapter-07 settings through the generated
+`BOARD_XIAO_ESP32S3` defaults instead of editing the global `src/defines.h` or
+falling back to `BOARD_CUSTOM`. The target generates LSM6DSV at `0x6B` with
+`DEG_0`, SDA/SCL/INT/AUX-INT/battery pins 5/6/4/2/1, and USB-powered
+`BAT_INTERNAL` with resistance values 180/100/220. The INT assignments remain
+physically unconnected and unused; GPIO1 and the resistor values do not validate
+a battery circuit.
+
+PlatformIO Core 6.1.19 compiled production and 400 kHz diagnostic firmware,
+the WEMOS D1 Mini and XIAO ESP32-C3 regressions, and four test-firmware
+configurations. The test command used `--without-uploading --without-testing`;
+therefore zero Unity runtime or hardware cases were executed.

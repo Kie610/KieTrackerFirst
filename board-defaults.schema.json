@@ -178,6 +178,10 @@
 					"maxItems": 2,
 					"description": "Sensors List"
 				},
+				"PIN_IMU_INT_2": {
+					"$ref": "#/$defs/pin",
+					"description": "Reserved secondary IMU interrupt pin"
+				},
 				"LED": {
 					"type": "object",
 					"description": "Led Settings",
