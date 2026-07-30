@@ -13,6 +13,13 @@ diagnostics guide: [docs/xiao-esp32s3-lsm6dsv.md](docs/xiao-esp32s3-lsm6dsv.md).
 The confirmed production I2C configuration is GPIO5/GPIO6, address `0x6B`, and
 100 kHz. Do not use an I2C scanner that transmits to reserved address `0x7E`.
 
+Branch layout in this fork: `xiao-lsm6dsv` is the primary development branch,
+and `main` exists only to mirror the fork source
+[SlimeVR/SlimeVR-Tracker-ESP](https://github.com/SlimeVR/SlimeVR-Tracker-ESP) so
+its updates can be pulled in. There is no planned merge of `xiao-lsm6dsv` into
+`main`; changes flow one way, `upstream/main` to `main` to `xiao-lsm6dsv`. See
+the branch policy in [AGENTS.md](AGENTS.md).
+
 Development agents use [AGENTS.md](AGENTS.md) for durable repository rules and
 [HANDOFF.agent.md](HANDOFF.agent.md) for current takeover state. The short
 [HANDOFF.md](HANDOFF.md) index links the detailed historical snapshot on demand.
