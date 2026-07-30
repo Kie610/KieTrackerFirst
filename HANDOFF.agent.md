@@ -13,12 +13,12 @@ complete:
 - C: XIAO defaults generate `IMU_LSM6DSV` at `0x6B`/`DEG_0`, GPIO5/6/4/2/1, `BAT_INTERNAL`, and 180/100/220; startup validation, safe I2C handling, contracts, and wiring procedure are implemented.
 - C: No Wi-Fi credentials are tracked; runtime provisioning is required.
 - C: Production logs the XIAO/I2C identity and successful WHO_AM_I probe after a bounded USB-CDC wait; the fallback scanner starts/restores at 100 kHz and never reverses XIAO GPIO5/6.
-- C: Milestone M3 is achieved: SlimeVR Server receives the tracker and the live IMU Preview follows physical movement.
+- C: Milestones M3/M4 are achieved: Server/Preview work, `DEG_0` matches the photographed mounting, and stationary drift is good.
 
 verified:
 - C: 2026-07-30 — evidence: status=PASS; kind=hardware; command=Arduino IDE 2.3.10 upload and serial monitor; environment=Windows, XIAO ESP32-S3 on direct USB COM6, corrected LSM6DSV wiring, I2C 100 kHz; scope=direct `0x6B` WHO_AM_I read returned `0x70` and safe `0x08..0x77` scan found only `0x6B`; counts=passed=2, failed=0, skipped=0, not-run=0
 - C: 2026-07-30 — evidence: status=PASS; kind=build; command=all four required firmware environments and both XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19; scope=compilation only; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
-- C: 2026-07-30 — evidence: status=PASS; kind=hardware/runtime; command=VSCode Upload, reset capture, owner-operated Preview test, and SlimeVR GUI inspection; environment=Windows, SlimeVR v20.1.0, XIAO ESP32-S3 + LSM6DSV, direct USB COM6, I2C 100 kHz; scope=flash, `0x6B` WHO_AM_I `0x70`, Wi-Fi, Server connection, live packets, 0% loss, and movement-following 3D Preview; counts=passed=11, failed=0, skipped=0, not-run=0
+- C: 2026-07-30 — evidence: status=PASS; kind=hardware/runtime; command=reset capture, owner motion test, and 10-minute GUI measurement; environment=Windows, SlimeVR v20.1.0, XIAO ESP32-S3 + LSM6DSV, COM6, 100 kHz; scope=rest calibration at 28.3--29.1 C, Server/Preview, `DEG_0`, 0% loss, heading 41.48 to 41.47 degrees; counts=passed=14, failed=0, skipped=1 six-face calibration, not-run=0
 
 not-run:
 - U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure requirements remain unresolved.
@@ -28,8 +28,9 @@ not-run:
 
 - C: Use 3.3 V, SDA GPIO5, SCL GPIO6, SA0 High, address `0x6B`, `WHO_AM_I` register `0x0F == 0x70`, and scan only `0x08..0x77`.
 - C: Keep production I2C at 100 kHz; never transmit to reserved address `0x7E`; use `0x6A` as the explicit alternate address.
+- C: Use `DEG_0` when the component side faces away, USB points toward the feet, and the opposite edge points toward the head.
 - C: Preserve the network packet format; map probe failures to `SENSOR_ERROR` and log the detailed cause over serial.
-- A: Startup wait 500 ms and rotation `DEG_0` remain provisional; INT assignments are unused and the battery circuit remains unvalidated.
+- A: Startup wait 500 ms remains provisional; INT assignments are unused and the battery circuit remains unvalidated.
 
 ## Next
 

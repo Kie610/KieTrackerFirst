@@ -24,8 +24,8 @@ contains suitable pull-ups, and their values, has not yet been confirmed from a
 schematic; do not rely on that assumption in a production circuit.
 
 The configured interrupt pins are not physically connected in the current
-hardware, and the LSM6DSV SoftFusion path does not use them. Sensor mounting
-rotation and battery-voltage measurement are also still undecided.
+hardware, and the LSM6DSV SoftFusion path does not use them. Battery-voltage
+measurement is still undecided.
 
 ## Firmware defaults
 
@@ -33,7 +33,7 @@ rotation and battery-voltage measurement are also still undecided.
 replace the dedicated target with the older generic `BOARD_CUSTOM` path.
 
 - board: `BOARD_XIAO_ESP32S3`
-- primary IMU: `IMU_LSM6DSV` at `0x6B`, provisional rotation `DEG_0`
+- primary IMU: `IMU_LSM6DSV` at `0x6B`, confirmed rotation `DEG_0`
 - common pins: SDA GPIO5, SCL GPIO6, IMU INT GPIO4, AUX INT GPIO2, battery ADC GPIO1
 - USB-powered monitoring: `BAT_INTERNAL`, shield resistance 180, R1 100, R2 220
 
@@ -59,6 +59,20 @@ found: 0x6B
 
 This confirms the module, 3.3 V supply, GPIO5/GPIO6 wiring, address `0x6B`, and
 the direct identity read for the tested unit.
+
+## Confirmed mounting and calibration
+
+For the tested mounting, the component side faces away from the body, the XIAO
+USB connector points toward the feet, and the opposite edge points toward the
+head. With this orientation, `DEG_0` made both forward/backward and left/right
+Preview motion agree with the physical tracker.
+
+On 2026-07-30, a stationary USB reset at 100 kHz completed SoftFusion rest
+calibration at approximately 28.3--29.1 C. The flat Preview pitch/roll error
+was below 0.4 degrees, so the optional six-face accelerometer calibration was
+skipped. During a subsequent stationary 10-minute measurement,
+the horizontal heading changed from 41.48 to 41.47 degrees (0.01 degrees per
+10 minutes; maximum displayed component change 0.02 degrees), rated good.
 
 ## Safe startup and scanning
 
@@ -88,7 +102,7 @@ Use the PlatformIO project tasks in VS Code:
 - `BOARD_XIAO_ESP32S3`: production build; starts and remains at 100 kHz.
 - `BOARD_XIAO_ESP32S3_400KHZ_DIAGNOSTIC`: evaluation build; starts at 100 kHz
   and changes to 400 kHz only after sensor setup succeeds.
-- `test_i2c_contract`: 15 compile-time contract cases for address limits, probe
+- `test_i2c_contract`: 27 compile-time contract cases for address limits, probe
   error classification, and LSM6DSV address resolution. PlatformIO compiles
   these cases for both XIAO environments without requiring a host C++ compiler.
 
