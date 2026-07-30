@@ -2,6 +2,8 @@
 
 updated: 2026-07-30
 repo: Kie610/KieTrackerFirst
+primary_branch: xiao-lsm6dsv
+fork_source: upstream = SlimeVR/SlimeVR-Tracker-ESP, mirrored by `main` only
 work_branch: codex/xiao-lsm6dsv-handoff
 upstream: origin/codex/xiao-lsm6dsv-handoff
 base: origin/xiao-lsm6dsv@cbd5274
@@ -15,7 +17,7 @@ complete:
 - C: Production logs the XIAO/I2C identity and successful WHO_AM_I probe after a bounded USB-CDC wait; the fallback scanner starts/restores at 100 kHz and never reverses XIAO GPIO5/6.
 - C: Milestones M3/M4 are achieved: Server/Preview work, `DEG_0` matches the photographed mounting, and stationary drift is good.
 - C: Integration is complete without a merge commit: on 2026-07-30 every codex and claude ref (`codex/xiao-lsm6dsv-handoff`@a08c0ac, review branches at cbd5274 and 5e680f7, `main`@5e680f7) was confirmed an ancestor of `xiao-lsm6dsv`@a08c0ac, and `git log --all --not xiao-lsm6dsv` was empty.
-- C: `origin/codex/xiao-lsm6dsv-handoff` was fast-forwarded 7591479..a08c0ac, so the work branch and its upstream now match; `main` is unchanged at 5e680f7 and still fast-forwardable.
+- C: `origin/codex/xiao-lsm6dsv-handoff` was fast-forwarded 7591479..a08c0ac, so the work branch and its upstream now match. `main` stays at 5e680f7 as the fork-source mirror and is intentionally not advanced.
 - C: The `claude/handoff-review-*` worktree and both branches were deleted after confirming containment and that their only ignored file matched the main worktree; the three codex worktrees are retained.
 
 verified:
@@ -34,6 +36,7 @@ not-run:
 - C: Use 3.3 V, SDA GPIO5, SCL GPIO6, SA0 High, address `0x6B`, `WHO_AM_I` register `0x0F == 0x70`, and scan only `0x08..0x77`.
 - C: Keep production I2C at 100 kHz; never transmit to reserved address `0x7E`; use `0x6A` as the explicit alternate address.
 - C: Use `DEG_0` when the component side faces away, USB points toward the feet, and the opposite edge points toward the head.
+- C: Owner decision of 2026-07-30 — `xiao-lsm6dsv` is the primary development branch and `main` only mirrors the fork source `upstream` so its updates can be pulled in. No merge of `xiao-lsm6dsv` into `main` is planned; changes flow one way, `upstream/main` to `main` to `xiao-lsm6dsv`. See the branch policy in `AGENTS.md`.
 - C: Preserve the network packet format; map probe failures to `SENSOR_ERROR` and log the detailed cause over serial.
 - A: Startup wait 500 ms remains provisional; INT assignments are unused and the battery circuit remains unvalidated.
 
@@ -45,7 +48,6 @@ not-run:
 - Run the 8-hour endurance test; blocked-by: U3
 - Resolve battery and enclosure requirements before release; blocked-by: U2
 - Decide whether to correct the `0df3` README draft to `0x6B` or discard the worktree; blocked-by: U4
-- Integrate `xiao-lsm6dsv` into `main` (still a clean fast-forward from 5e680f7); blocked-by: owner authorization
 
 ## Paths
 
