@@ -1,55 +1,55 @@
 # Agent handoff v1
 
-updated: 2026-07-30
+updated: 2026-08-03
 repo: Kie610/KieTrackerFirst
-work_branch: codex/xiao-lsm6dsv-handoff
-upstream: origin/codex/xiao-lsm6dsv-handoff
-base: origin/xiao-lsm6dsv@cbd5274
-goal: XIAO ESP32-S3 + LSM6DSV small wireless SlimeVR tracker
+work_branch: codex/momentary-deep-sleep
+upstream: none
+base: codex/xiao-lsm6dsv-handoff@a08c0ac
+goal: Prototype and verify switchless GPIO7 momentary-button Deep Sleep for the XIAO ESP32-S3 + LSM6DSV tracker.
 
 ## State
 
 complete:
-- C: XIAO defaults generate `IMU_LSM6DSV` at `0x6B`/`DEG_0`, GPIO5/6/4/2/1, `BAT_INTERNAL`, and 180/100/220; startup validation, safe I2C handling, contracts, and wiring procedure are implemented.
-- C: No Wi-Fi credentials are tracked; runtime provisioning is required.
-- C: Production logs the XIAO/I2C identity and successful WHO_AM_I probe after a bounded USB-CDC wait; the fallback scanner starts/restores at 100 kHz and never reverses XIAO GPIO5/6.
-- C: Milestones M3/M4 are achieved: Server/Preview work, `DEG_0` matches the photographed mounting, and stationary drift is good.
+- C: XIAO defaults use LSM6DSV `0x6B`/`DEG_0`, GPIO5/6/4/2/1, `BAT_INTERNAL`, and 100 kHz production I2C; safe probing and runtime Wi-Fi provisioning remain intact.
+- C: Replacement IMU passed ten 100 kHz power-removal cycles; the prior shorted IMU remains isolated.
+- C: GPIO7 active-low momentary-button handling, two-second hold/release, EXT0 wake, Wi-Fi/LED shutdown, and LSM6DSV FIFO/gyro/accel power-down are implemented.
 
 verified:
-- C: 2026-07-30 — evidence: status=PASS; kind=hardware; command=Arduino IDE 2.3.10 upload and serial monitor; environment=Windows, XIAO ESP32-S3 on direct USB COM6, corrected LSM6DSV wiring, I2C 100 kHz; scope=direct `0x6B` WHO_AM_I read returned `0x70` and safe `0x08..0x77` scan found only `0x6B`; counts=passed=2, failed=0, skipped=0, not-run=0
-- C: 2026-07-30 — evidence: status=PASS; kind=build; command=all four required firmware environments and both XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19; scope=compilation only; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
-- C: 2026-07-30 — evidence: status=PASS; kind=hardware/runtime; command=reset capture, owner motion test, and 10-minute GUI measurement; environment=Windows, SlimeVR v20.1.0, XIAO ESP32-S3 + LSM6DSV, COM6, 100 kHz; scope=rest calibration at 28.3--29.1 C, Server/Preview, `DEG_0`, 0% loss, heading 41.48 to 41.47 degrees; counts=passed=14, failed=0, skipped=1 six-face calibration, not-run=0
+- C: 2026-08-03 — evidence: status=PASS; kind=compile; command=PlatformIO run for BOARD_XIAO_ESP32S3, 400KHZ_DIAGNOSTIC, BOARD_WEMOSD1MINI, and BOARD_XIAO_ESP32C3; environment=Windows/PlatformIO 6.1.19; scope=four firmware environments; counts=passed=4, failed=0, skipped=0, not-run=0
+- C: 2026-08-03 — evidence: status=PASS; kind=compile; command=platformio test for both XIAO environments with --without-uploading --without-testing; environment=Windows/PlatformIO 6.1.19; scope=four test-firmware targets, compilation only; counts=passed=4, failed=0, skipped=0, not-run=0
+- C: 2026-08-01 — evidence: status=PASS; kind=hardware; command=serial reset after power cycles 1--10/10; environment=Windows/XIAO/COM6/100 kHz; scope=replacement IMU `0x6B`, `WHO_AM_I=0x70`, rest calibration; counts=passed=20, failed=0, skipped=0, not-run=0
+- C: 2026-07-30 — evidence: status=PASS; kind=runtime; command=reset+motion+10-minute GUI; environment=Windows/SlimeVR20.1.0/XIAO/COM6/100 kHz; scope=calibration, Preview, `DEG_0`, 0% packet loss, stable heading; counts=passed=14, failed=0, skipped=0, not-run=0
 
 not-run:
-- U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure requirements remain unresolved.
-- U: U3 400 kHz hardware comparison, ten power-removal cycles, detailed disconnected-sensor logs, and 8-hour endurance remain not run.
+- U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure remain unresolved.
+- U: U3 400 kHz hardware comparison, detailed disconnected-sensor logs, and eight-hour endurance remain not run.
+- U: U4 momentary-button Sleep/Wake runtime, ten-cycle hardware run, and completed-tracker Deep Sleep current remain not run.
+- A: Six-face acceleration calibration remains unnecessary unless later mounting tests show material error.
 
 ## Decisions
 
-- C: Use 3.3 V, SDA GPIO5, SCL GPIO6, SA0 High, address `0x6B`, `WHO_AM_I` register `0x0F == 0x70`, and scan only `0x08..0x77`.
-- C: Keep production I2C at 100 kHz; never transmit to reserved address `0x7E`; use `0x6A` as the explicit alternate address.
-- C: Use `DEG_0` when the component side faces away, USB points toward the feet, and the opposite edge points toward the head.
-- C: Preserve the network packet format; map probe failures to `SENSOR_ERROR` and log the detailed cause over serial.
-- A: Startup wait 500 ms remains provisional; INT assignments are unused and the battery circuit remains unvalidated.
+- C: Keep 3.3 V, SDA GPIO5, SCL GPIO6, SA0 High, `0x6B`, `0x0F == 0x70`, 100 kHz production I2C, safe scan `0x08..0x77`, and alternate `0x6A`.
+- C: Use a normally-open button from GPIO7 to GND plus external 10 kOhm pull-up to 3V3; never route battery current through it.
+- C: Hold two seconds, release to sleep, and press to wake; boot stays disarmed until the first release.
+- C: Preserve the network packet format; detailed probe failures remain serial-only and map to `SENSOR_ERROR`.
 
 ## Next
 
-- Run ten complete power-removal cycles at 100 kHz and record every address/identity result; blocked-by: none
-- Capture address NACK, transmission error, read failure, and identity mismatch logs; blocked-by: none
-- Run the optional 400 kHz comparison without promoting it to production; blocked-by: U3
-- Run the 8-hour endurance test; blocked-by: U3
-- Resolve battery and enclosure requirements before release; blocked-by: U2
+- Flash XIAO and run short-press, hold/release, wake-log, IMU identity, Server reconnect, and ten-cycle checks; blocked-by: U4
+- Measure complete-tracker awake/Deep Sleep current and temperature on battery; blocked-by: U2
+- Capture disconnected-sensor failure logs; blocked-by: none
+- Run optional 400 kHz comparison and eight-hour endurance; blocked-by: U3
 
 ## Paths
 
-- C: procedure/history: `docs/xiao-esp32s3-lsm6dsv.md`, `docs/handoff-history.md`
-- C: configuration/driver: `platformio.ini`, `board-defaults.json`, `src/sensors/softfusion/`, `lib/i2cscan/`
+- C: implementation: `src/power/PowerButton.*`, `src/main.cpp`, `src/sensors/SensorManager.*`, `src/sensors/softfusion/`
+- C: procedure: `docs/momentary-button-deep-sleep.md`, `docs/xiao-esp32s3-lsm6dsv.md`
 - C: tests: `pio-test/test_i2c_contract/test_main.cpp`, `pio-test/test_xiao_lsm6dsv_hardware/test_main.cpp`
 - C: forbidden legacy probe: `test/I2C_TEST.cpp`
 
 ## Resume protocol
 
 1. Read `AGENTS.md` and this file.
-2. Recheck Git branch, HEAD, worktree, upstream, connected serial hardware, and current tests; prefer live evidence.
-3. Run the smallest relevant checks, then start the first unblocked `Next` item.
-4. Update this file with exact evidence; never promote compile success to runtime or hardware PASS.
+2. Recheck branch, worktree, upstream, hardware, and tests; prefer live evidence.
+3. Run the smallest relevant check, then the first unblocked `Next` item.
+4. Update exact evidence; never promote compilation to runtime or hardware PASS.

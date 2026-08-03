@@ -132,6 +132,14 @@ struct LSM6DSV : LSM6DSOutputHandler {
 		return true;
 	}
 
+	void powerDown() {
+		// Stop FIFO batching before powering down the gyroscope and accelerometer.
+		m_RegisterInterface.writeReg(Regs::FifoCtrl4Mode::reg, 0);
+		m_RegisterInterface.writeReg(Regs::FifoCtrl3BDR::reg, 0);
+		m_RegisterInterface.writeReg(Regs::Ctrl2GODR::reg, 0);
+		m_RegisterInterface.writeReg(Regs::Ctrl1XLODR::reg, 0);
+	}
+
 	bool bulkRead(DriverCallbacks<int16_t>&& callbacks) {
 		return LSM6DSOutputHandler::template bulkRead<Regs>(
 			std::move(callbacks),
