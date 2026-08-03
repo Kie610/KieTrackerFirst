@@ -1,6 +1,6 @@
 # Agent handoff v1
 
-updated: 2026-08-01
+updated: 2026-08-03
 repo: Kie610/KieTrackerFirst
 primary_branch: xiao-lsm6dsv
 fork_source: upstream = SlimeVR/SlimeVR-Tracker-ESP, mirrored by `main` only
@@ -15,20 +15,26 @@ complete:
 - C: Production defaults are XIAO ESP32-S3, LSM6DSV `0x6B`, WHO_AM_I `0x0F=0x70`, GPIO5/6, and 100 kHz. Scans use `0x08..0x77`; `0x7E` is never transmitted.
 - C: Startup diagnostics classify address NACK, transmission error, short read, and WHO_AM_I mismatch; network status remains `SENSOR_ERROR`.
 - C: `DEG_0` matches the tested mounting; SlimeVR Server/Preview and stationary drift checks passed.
-- C: `xiao-lsm6dsv` contains the codex implementation and the claude handoff update through `04fbb29`; `main` remains the upstream mirror.
+- C: The replacement IMU passed ten 100 kHz power-removal cycles; the prior shorted IMU is isolated from power.
+- C: `xiao-lsm6dsv` contains the codex implementation, the claude handoff update through `04fbb29`, and the 2026-08-01 hardware record merged from `codex/xiao-lsm6dsv-handoff`@`7142cec`; `main` remains the upstream mirror.
 - C: No Wi-Fi credentials are tracked; runtime provisioning is required.
 
 verified:
+- C: 2026-08-01 — evidence: status=PASS; kind=hardware; command=serial reset after power cycles 1--10/10; environment=Windows/XIAO ESP32-S3/COM6/100 kHz; scope=replacement IMU `0x6B` WHO_AM_I=`0x70` plus gyro/rest calibration on every cycle; counts=passed=20, failed=0, skipped=0, not-run=0
+- C: 2026-08-01 — evidence: status=FAIL; kind=hardware; command=serial capture after USB reconnect; environment=Windows/XIAO ESP32-S3/COM6/100 kHz; scope=prior IMU held SCL low, `0x6B` READ_FAILURE tx=0 rx=0/1, and measured about 0 ohms VCC to GND while unpowered; counts=passed=0, failed=1, skipped=0, not-run=0
+- C: 2026-08-01 — evidence: status=PASS; kind=compile; command=PlatformIO four firmware builds and the XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19/no hardware; scope=compile-only; counts=passed=8, failed=0, skipped=0, not-run=0
 - C: 2026-07-30 — evidence: status=PASS; kind=hardware; command=Arduino IDE 2.3.10 upload and serial monitor; environment=Windows/XIAO ESP32-S3/COM6/LSM6DSV/100 kHz; scope=WHO_AM_I `0x70` and safe scan found only `0x6B`; counts=passed=2, failed=0, skipped=0, not-run=0
-- C: 2026-07-30 — evidence: status=PASS; kind=compile; command=PlatformIO builds for four firmware environments and two XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19; scope=compilation/static contracts only; counts=passed=8, failed=0, skipped=0, not-run=0
 - C: 2026-07-30 — evidence: status=PASS; kind=runtime; command=reset capture, owner motion test, and 10-minute GUI measurement; environment=Windows/SlimeVR v20.1.0/XIAO ESP32-S3/COM6/100 kHz; scope=rest calibration, Server/Preview, `DEG_0`, 0% loss, heading 41.48 to 41.47 degrees; counts=passed=14, failed=0, skipped=0, not-run=0
+- C: 2026-07-30 — evidence: status=PASS; kind=compile; command=PlatformIO builds for four firmware environments and two XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19; scope=compilation/static contracts only; counts=passed=8, failed=0, skipped=0, not-run=0
 - C: 2026-07-30 — evidence: status=PASS; kind=compile; command=PlatformIO takeover re-verification at `84f6bb3`; environment=Windows/PlatformIO/no hardware; scope=four builds, two test compilations, and `git diff --check`; counts=passed=8, failed=0, skipped=0, not-run=0
 
 not-run:
-- U: U5 no serial port was enumerated on 2026-07-30; hardware work awaits data-capable USB.
 - U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure are unresolved.
-- U: U3 400 kHz comparison, ten power cycles, disconnected-sensor logs, and 8-hour endurance are not run.
-- U: U4 detached `0df3` worktree retains an owner README draft saying `0x6A`; leave it untouched.
+- U: U3 400 kHz comparison, disconnected-sensor logs, and 8-hour endurance are not run.
+- U: U4 the detached `0df3` worktree still holds the owner README draft saying `0x6A`. Its content was merged into `README.md` at `4d60dba` with `0x6B` and a Wi-Fi provisioning correction; the worktree copy is left untouched.
+- U: U6 `codex/momentary-deep-sleep` (3 commits, about +718 lines, `src/power/PowerButton.*`, KiCAD files, SoftFusion and `platformio.ini` edits) is not merged. It is not a fast-forward and conflicts in this file. Owner deferred it on 2026-08-03.
+- A: Six-face acceleration calibration was not run because flat Preview pitch/roll error was below 0.4 degrees and the owner confirmed motion alignment.
+- C: U5 is resolved. The 2026-08-01 captures were taken over COM6, so the earlier "no serial port enumerated" blocker no longer applies.
 
 ## Decisions
 
@@ -39,11 +45,11 @@ not-run:
 
 ## Next
 
-- Connect a data-capable tracker USB port and run ten 100 kHz power-removal cycles; blocked-by: U5
-- Capture address NACK and transmission diagnostics; mismatch and short-read paths are contract-test-only; blocked-by: U5
+- Capture address NACK, transmission error, read failure, and identity mismatch logs; mismatch and short-read paths remain contract-test-only; blocked-by: none
 - Run the optional 400 kHz comparison without changing production defaults; blocked-by: U3
 - Run the 8-hour endurance test; blocked-by: U3
 - Resolve battery and enclosure requirements; blocked-by: U2
+- Decide whether to merge `codex/momentary-deep-sleep`; a merge needs conflict resolution in this file plus the full four-environment build and test compilation; blocked-by: U6
 
 ## Paths
 
