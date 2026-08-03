@@ -124,6 +124,12 @@ press RESET once to start the flashed firmware.
 100 kHz remains the production setting until all unresolved hardware work is
 recorded. The following checks cannot be claimed from an automated build:
 
+On 2026-08-01, the replacement LSM6DSV passed 10 complete USB power-removal
+cycles at 100 kHz. Each post-cycle serial reset confirmed address `0x6B`,
+`WHO_AM_I == 0x70`, and rest calibration: 20 checks passed, 0 failed. The prior
+miswired module measured approximately 0 ohms from VCC to GND while unpowered
+and remains isolated from power.
+
 1. Run the 100 kHz hardware suite and confirm that only `0x6B` is found.
 2. Repeat after USB reset and after complete power removal for 10 consecutive
    successful cycles.

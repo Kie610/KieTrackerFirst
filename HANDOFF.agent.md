@@ -1,6 +1,6 @@
 # Agent handoff v1
 
-updated: 2026-07-30
+updated: 2026-08-01
 repo: Kie610/KieTrackerFirst
 work_branch: codex/xiao-lsm6dsv-handoff
 upstream: origin/codex/xiao-lsm6dsv-handoff
@@ -10,19 +10,22 @@ goal: XIAO ESP32-S3 + LSM6DSV small wireless SlimeVR tracker
 ## State
 
 complete:
-- C: XIAO defaults generate `IMU_LSM6DSV` at `0x6B`/`DEG_0`, GPIO5/6/4/2/1, `BAT_INTERNAL`, and 180/100/220; startup validation, safe I2C handling, contracts, and wiring procedure are implemented.
+- C: XIAO defaults generate `IMU_LSM6DSV` at `0x6B`/`DEG_0`, GPIO5/6/4/2/1, `BAT_INTERNAL`, and 180/100/220; startup validation, safe I2C handling, and contracts are implemented.
 - C: No Wi-Fi credentials are tracked; runtime provisioning is required.
-- C: Production logs the XIAO/I2C identity and successful WHO_AM_I probe after a bounded USB-CDC wait; the fallback scanner starts/restores at 100 kHz and never reverses XIAO GPIO5/6.
-- C: Milestones M3/M4 are achieved: Server/Preview work, `DEG_0` matches the photographed mounting, and stationary drift is good.
+- C: Production logs XIAO/I2C identity and WHO_AM_I after USB-CDC wait; fallback scanning restores 100 kHz and never reverses GPIO5/6.
+- C: M3/M4 achieved: Server/Preview work, `DEG_0` matches photographed mounting, and drift is good.
+- C: Replacement IMU passed ten 100 kHz power-removal cycles; prior shorted IMU is isolated.
 
 verified:
-- C: 2026-07-30 — evidence: status=PASS; kind=hardware; command=Arduino IDE 2.3.10 upload and serial monitor; environment=Windows, XIAO ESP32-S3 on direct USB COM6, corrected LSM6DSV wiring, I2C 100 kHz; scope=direct `0x6B` WHO_AM_I read returned `0x70` and safe `0x08..0x77` scan found only `0x6B`; counts=passed=2, failed=0, skipped=0, not-run=0
-- C: 2026-07-30 — evidence: status=PASS; kind=build; command=all four required firmware environments and both XIAO test suites with `--without-uploading --without-testing`; environment=Windows/PlatformIO 6.1.19; scope=compilation only; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
-- C: 2026-07-30 — evidence: status=PASS; kind=hardware/runtime; command=reset capture, owner motion test, and 10-minute GUI measurement; environment=Windows, SlimeVR v20.1.0, XIAO ESP32-S3 + LSM6DSV, COM6, 100 kHz; scope=rest calibration at 28.3--29.1 C, Server/Preview, `DEG_0`, 0% loss, heading 41.48 to 41.47 degrees; counts=passed=14, failed=0, skipped=1 six-face calibration, not-run=0
+- C: 2026-08-01 — evidence: status=PASS; kind=hardware; command=serial reset after power cycles 1--10/10; environment=Windows/XIAO/COM6/100 kHz; scope=replacement IMU `0x6B` WHO_AM_I=`0x70`, gyro/rest calibration; counts=passed=20, failed=0, skipped=0, not-run=0
+- C: 2026-08-01 — evidence: status=PASS; kind=compile; command=PlatformIO four builds + XIAO tests with --without-uploading --without-testing; environment=Windows/PlatformIO 6.1.19; scope=firmware and four test targets compile-only; counts=passed=8, failed=0, skipped=0, not-run=0
+- C: 2026-07-30 — evidence: status=PASS; kind=runtime; command=reset+motion+10-min GUI; environment=Windows/SlimeVR20.1.0/XIAO/COM6/100 kHz; scope=calibration 28.3--29.1 C, Preview, `DEG_0`, 0% loss, heading 41.48->41.47; counts=passed=14, failed=0, skipped=0, not-run=0
+- C: 2026-08-01 — evidence: status=FAIL; kind=hardware; command=serial capture after USB reconnect; environment=Windows/XIAO/COM6/100 kHz; scope=prior IMU held SCL low, `0x6B` READ_FAILURE tx=0 rx=0/1; counts=passed=0, failed=1, skipped=0, not-run=0
 
 not-run:
 - U: U2 final cell, protection, connector, charge current, ADC divider, and enclosure requirements remain unresolved.
-- U: U3 400 kHz hardware comparison, ten power-removal cycles, detailed disconnected-sensor logs, and 8-hour endurance remain not run.
+- U: U3 400 kHz hardware comparison, detailed disconnected-sensor logs, and 8-hour endurance remain not run.
+- A: Six-face acceleration calibration was not run because flat Preview pitch/roll error was below 0.4 degrees and the owner confirmed motion alignment.
 
 ## Decisions
 
@@ -34,7 +37,6 @@ not-run:
 
 ## Next
 
-- Run ten complete power-removal cycles at 100 kHz and record every address/identity result; blocked-by: none
 - Capture address NACK, transmission error, read failure, and identity mismatch logs; blocked-by: none
 - Run the optional 400 kHz comparison without promoting it to production; blocked-by: U3
 - Run the 8-hour endurance test; blocked-by: U3
