@@ -226,15 +226,3 @@ PlatformIO Core 6.1.19 compiled production and 400 kHz diagnostic firmware,
 the WEMOS D1 Mini and XIAO ESP32-C3 regressions, and four test-firmware
 configurations. The test command used `--without-uploading --without-testing`;
 therefore zero Unity runtime or hardware cases were executed.
-
-# 2026-08-03 momentary-button branch handoff migration
-
-The pre-prototype compact handoff is preserved at Git commit `a08c0ac`. It
-recorded the 2026-07-30 Arduino direct-read hardware PASS (`0x6B`,
-`WHO_AM_I=0x70`, safe scan), the four firmware plus four compile-only test
-targets, and the SlimeVR reset/motion/10-minute runtime result. Its open work was
-the 100/400 kHz comparison, power-removal cycles, disconnected-sensor logs,
-eight-hour endurance, battery selection/monitoring, and enclosure. Owner results
-later confirmed ten 100 kHz replacement-IMU power cycles; the old shorted IMU
-remains isolated. The new compact handoff separates this established evidence
-from the untested GPIO7 momentary-button Deep Sleep prototype.

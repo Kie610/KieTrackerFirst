@@ -48,7 +48,6 @@ public:
 	void postSetup();
 
 	void update();
-	void prepareForSleep();
 
 	std::vector<std::unique_ptr<::Sensor>>& getSensors() { return m_Sensors; };
 	SensorTypeID getSensorType(size_t id) {

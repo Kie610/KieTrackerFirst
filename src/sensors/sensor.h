@@ -76,7 +76,6 @@ public:
 	virtual void motionSetup(){};
 	virtual void postSetup(){};
 	virtual void motionLoop(){};
-	virtual void prepareForSleep(){};
 	virtual void sendData();
 	virtual void setAcceleration(Vector3 a);
 	virtual void setFusedRotation(Quat r);

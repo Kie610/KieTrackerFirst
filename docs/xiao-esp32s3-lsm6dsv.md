@@ -15,39 +15,17 @@ server procedures are in the [SlimeVR documentation](https://docs.slimevr.dev/).
 | IMU INT | D3 / GPIO4 | Defined for this target; not connected or used by LSM6DSV SoftFusion yet |
 | AUX IMU INT | D1 / GPIO2 | Reserved; no auxiliary IMU is installed |
 | Battery ADC | D0 / GPIO1 | Reserved for the later battery build; unused in USB-powered mode |
-| SDO / SA0 | High, held by the module's own 4.7 kOhm pull-up | Selects I2C address `0x6B`. No wire is needed. Bridging the top-side `SDO` solder jumper connects it to GND, selects `0x6A`, and the firmware then finds no sensor |
-| CS / CSB | High, held by the module's own 4.7 kOhm pull-up | Required for I2C operation. No wire is needed |
-| Power button | D8 / GPIO7 | Reserved for the momentary Deep Sleep button; external 10 kOhm pull-up to 3V3, button to GND. Do not reuse as SPI SCK |
+| SDO / SA0 | High | Selects I2C address `0x6B` |
+| CS / CSB | High | Required for I2C operation |
 
-The connection diagram is [`wiring-xiao-lsm6dsv.svg`](wiring-xiao-lsm6dsv.svg).
-Its pad order matches the official Seeed front pinout image: left column
-`D0..D6`, right column `VBUS`, `GND`, `3.3V-OUT`, `D10`, `D9`, `D8`, `D7`, and
-`BAT+` / `BAT-` on the back.
-
-The module silkscreen (revision `5265159A-P1-241122`, read from the BOOTH
-product photographs) labels one row `OSDO`, `3V3`, `GND`, `SCL`, `SDA`, `CS`,
-`SDO` and the other row `OCS`, `INT2`, `INT1`, `SCX`, `SDX`. Every pin this
-build uses sits in the first row. `OSDO` / `OCS` / `SCX` / `SDX` are the OIS
-auxiliary SPI pins and stay unused. The supply pin is labelled `3V3`, not `VIN`.
-The top side carries an `SDO` solder jumper whose state is unconfirmed; the
-confirmed fact is only that SA0 reads high and the device answers at `0x6B`.
-
-Do not use 5 V logic on SDA, SCL, CS/CSB, or SDO/SA0.
-
-Owner measurement of 2026-08-03, unpowered, on the module: `SDA`, `SCL`, `SDO`,
-and `CS` each read 4.6 kOhm to `3V3`, so the module carries its own 4.7 kOhm
-pull-ups on all four. No external I2C pull-up is required, and `SDO` and `CS`
-need no wire: the module holds both high on its own. Only `3V3`, `GND`, `SDA`,
-and `SCL` have to be connected. The top-side `SDO` solder jumper is open and its
-free pad reads continuous to GND, so that jumper exists to select `0x6A`; leave
-it open, or the firmware will find no sensor at `0x6B`.
+Do not use 5 V logic on SDA, SCL, CS/CSB, or SDO/SA0. The electrical design
+must provide SDA/SCL pull-ups to 3.3 V. Whether the purchased module already
+contains suitable pull-ups, and their values, has not yet been confirmed from a
+schematic; do not rely on that assumption in a production circuit.
 
 The configured interrupt pins are not physically connected in the current
-hardware, and the LSM6DSV SoftFusion path does not use them: `SoftFusionSensor`
-takes `intPin` as an optional argument that defaults to `nullptr`, and the
-LSM6DSV driver polls the FIFO over I2C instead. Wiring `INT1` is therefore
-optional today; it is only worth running if motion wake from Deep Sleep is
-attempted later. Battery-voltage measurement is still undecided.
+hardware, and the LSM6DSV SoftFusion path does not use them. Battery-voltage
+measurement is still undecided.
 
 ## Firmware defaults
 

@@ -144,16 +144,4 @@ void SensorManager::update() {
 	sensorManagerNetworkingBM.after();
 }
 
-void SensorManager::prepareForSleep() {
-	for (auto& sensor : m_Sensors) {
-		if (!sensor->isWorking()) {
-			continue;
-		}
-		if (sensor->m_hwInterface != nullptr) {
-			sensor->m_hwInterface->swapIn();
-		}
-		sensor->prepareForSleep();
-	}
-}
-
 }  // namespace SlimeVR::Sensors

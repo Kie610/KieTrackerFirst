@@ -31,7 +31,6 @@
 #include "globals.h"
 #include "logging/Logger.h"
 #include "ota.h"
-#include "power/PowerButton.h"
 #include "serial/serialcommands.h"
 #include "status/TPSCounter.h"
 
@@ -65,7 +64,6 @@ unsigned long loopTime = 0;
 unsigned long lastStatePrint = 0;
 bool secondImuActive = false;
 BatteryMonitor battery;
-SlimeVR::Power::PowerButton powerButton;
 TPSCounter tpsCounter;
 
 void setup() {
@@ -85,7 +83,6 @@ void setup() {
 	Serial.println();
 
 	logger.info("SlimeVR v" FIRMWARE_VERSION " starting up...");
-	powerButton.setup();
 #if BOARD == BOARD_XIAO_ESP32S3
 	logger.info(
 		"Board: XIAO ESP32-S3 (%d), I2C SDA=%d SCL=%d, startup=%u Hz, runtime=%u Hz",
@@ -190,8 +187,6 @@ void setup() {
 }
 
 void loop() {
-	powerButton.update();
-
 	tpsCounterBM.before();
 	tpsCounter.update();
 	tpsCounterBM.after();
