@@ -63,12 +63,17 @@ static_assert(BATTERY_SHIELD_R2 == 220);
 static_assert(BOARD == BOARD_XIAO_ESP32S3);
 static_assert(I2C_STARTUP_SPEED == 100000);
 static_assert(I2C_SPEED == 100000 || I2C_SPEED == 400000);
+static_assert(MOMENTARY_POWER_BUTTON_PIN == 7);
+static_assert(MOMENTARY_POWER_BUTTON_HOLD_MS == 2000);
+static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_SDA);
+static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_SCL);
+static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_INT);
 #endif
 
 void testCompileTimeContractsArePresent() {
 	TEST_ASSERT_TRUE_MESSAGE(
 		true,
-		"27 I2C and XIAO configuration contract cases passed"
+		"32 I2C, XIAO, and power-button contract cases passed"
 	);
 }
 

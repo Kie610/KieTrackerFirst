@@ -422,6 +422,12 @@ public:
 		});
 	}
 
+	void prepareForSleep() final {
+		if constexpr (requires { m_sensor.powerDown(); }) {
+			m_sensor.powerDown();
+		}
+	}
+
 	void startCalibration(int calibrationType) final {
 		calibrator.startCalibration(calibrationType);
 	}

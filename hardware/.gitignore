@@ -1,0 +1,9 @@
+# KiCad transient files
+*.lck
+~*.lck
+*.kicad_prl
+*-backups/
+fp-info-cache
+
+# Konnect snapshot history (contains its own nested git repository)
+.history/
