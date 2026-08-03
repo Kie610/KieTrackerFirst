@@ -4,6 +4,16 @@ Firmware for ESP8266 / ESP32 microcontrollers and different IMU sensors to use t
 
 Requires [SlimeVR Server](https://github.com/SlimeVR/SlimeVR-Server) to work with SteamVR and resolve pose. Should be compatible with [owoTrack](https://github.com/abb128/owo-track-driver), but is not guaranteed.
 
+## このフォークについて
+
+- MCU: Seeed XIAO ESP32-S3
+- IMU: LSM6DSV / I2C アドレス `0x6B`、SDA=GPIO5、SCL=GPIO6、100 kHz
+- 主開発ブランチ: `xiao-lsm6dsv`（`main` は fork 元ミラー専用）
+- Wi-Fi 認証情報はリポジトリに含めず、実行時プロビジョニングで設定する
+- 電源: リチウムイオンパック（BAT パッド）を想定。セル、保護回路、コネクタ、
+  充電電流、ADC 分圧、筐体はいずれも未確定（`HANDOFF.agent.md` の U2）
+- 詳細手順: [docs/xiao-esp32s3-lsm6dsv.md](docs/xiao-esp32s3-lsm6dsv.md)
+
 ## Configuration
 
 Firmware configuration is located in the `defines.h` file. For more information on how to configure your firmware, refer to the [Configuring the firmware project section of SlimeVR documentation](https://docs.slimevr.dev/firmware/configuring-project.html).
