@@ -1,0 +1,6 @@
+# KiCad transient files
+*.lck
+~*.lck
+*.kicad_prl
+*-backups/
+fp-info-cache
