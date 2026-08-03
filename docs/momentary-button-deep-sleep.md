@@ -6,6 +6,11 @@ and a removable battery connection remain required.
 
 ## Wiring
 
+The connection diagram is [`wiring-xiao-lsm6dsv.svg`](wiring-xiao-lsm6dsv.svg). Its
+XIAO pad order matches the official Seeed front pinout image, which also marks
+GPIO7 as an RTC pin, so it is valid as an EXT0 wake source. The module pin order
+is not documented by the seller; read it from the silkscreen.
+
 - Cell positive goes directly to `BAT+`; cell negative goes directly to `BAT-`.
 - Connect a normally-open momentary button between XIAO `D8` / GPIO7 and GND.
 - Add an external 10 kOhm pull-up from GPIO7 to 3V3. The firmware also enables
@@ -29,9 +34,12 @@ prevents a wake press that is held too long from immediately requesting sleep.
 
 ## Firmware sequence
 
-`PowerButton` stops the active sensors through `SensorManager::prepareForSleep`,
-turns off the LED and Wi-Fi, configures GPIO7 as an active-low EXT0 wake source,
-and starts Deep Sleep. The LSM6DSV driver changes FIFO mode and batching to zero,
+`PowerButton` waits for the released level to stay stable for
+`MOMENTARY_POWER_BUTTON_RELEASE_DEBOUNCE_MS` (50 ms), stops the active sensors
+through `SensorManager::prepareForSleep`, turns off the LED and Wi-Fi, holds the
+RTC pull-up on GPIO7, configures GPIO7 as an active-low EXT0 wake source, and
+starts Deep Sleep. Arming EXT0 while the contact still bounces would wake the
+tracker immediately. The LSM6DSV driver changes FIFO mode and batching to zero,
 then writes zero to `CTRL2_G` and `CTRL1_XL` so both ODR fields select power-down.
 
 The XIAO PlatformIO environments enable this prototype with:

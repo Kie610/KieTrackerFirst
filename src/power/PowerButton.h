@@ -10,6 +10,7 @@ public:
 	void update();
 
 private:
+	void waitForDebouncedRelease();
 	void enterDeepSleep();
 
 	bool m_WaitingForRelease = true;

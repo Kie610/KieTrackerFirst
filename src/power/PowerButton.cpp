@@ -5,6 +5,7 @@
 
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
 #include <WiFi.h>
+#include <driver/rtc_io.h>
 #include <esp_sleep.h>
 #include <esp_wifi.h>
 #endif
@@ -12,6 +13,14 @@
 #if defined(MOMENTARY_POWER_BUTTON_PIN) \
 	&& !defined(MOMENTARY_POWER_BUTTON_HOLD_MS)
 #define MOMENTARY_POWER_BUTTON_HOLD_MS 2000
+#endif
+
+#if defined(MOMENTARY_POWER_BUTTON_PIN) \
+	&& !defined(MOMENTARY_POWER_BUTTON_RELEASE_DEBOUNCE_MS)
+// The released level must stay stable for this long before the active-low wake
+// source is armed. Arming while the contact still bounces makes EXT0 fire
+// immediately and the tracker wakes up without a press.
+#define MOMENTARY_POWER_BUTTON_RELEASE_DEBOUNCE_MS 50
 #endif
 
 #if defined(ESP32S3) && defined(MOMENTARY_POWER_BUTTON_PIN)
@@ -67,6 +76,18 @@ void PowerButton::update() {
 #endif
 }
 
+void PowerButton::waitForDebouncedRelease() {
+#if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+	uint32_t releasedAt = millis();
+	while (millis() - releasedAt < MOMENTARY_POWER_BUTTON_RELEASE_DEBOUNCE_MS) {
+		if (digitalRead(MOMENTARY_POWER_BUTTON_PIN) == LOW) {
+			releasedAt = millis();
+		}
+		delay(5);
+	}
+#endif
+}
+
 void PowerButton::enterDeepSleep() {
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
 	powerButtonLogger.info(
@@ -74,10 +95,7 @@ void PowerButton::enterDeepSleep() {
 		static_cast<unsigned>(MOMENTARY_POWER_BUTTON_HOLD_MS)
 	);
 
-	while (digitalRead(MOMENTARY_POWER_BUTTON_PIN) == LOW) {
-		delay(10);
-	}
-	delay(50);
+	waitForDebouncedRelease();
 
 	sensorManager.prepareForSleep();
 	ledManager.off();
@@ -86,6 +104,11 @@ void PowerButton::enterDeepSleep() {
 	Serial.flush();
 
 	const auto wakePin = static_cast<gpio_num_t>(MOMENTARY_POWER_BUTTON_PIN);
+	// The internal pull-up is not retained through deep sleep, so hold the RTC
+	// pull-up as well. The external resistor stays required; this only keeps the
+	// wake input defined if it is missing or intermittent.
+	rtc_gpio_pullup_en(wakePin);
+	rtc_gpio_pulldown_dis(wakePin);
 	if (esp_sleep_enable_ext0_wakeup(wakePin, 0) != ESP_OK) {
 		powerButtonLogger.error(
 			"GPIO%d cannot be configured as a deep-sleep wake source",
