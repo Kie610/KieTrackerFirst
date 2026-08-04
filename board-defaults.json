@@ -554,7 +554,7 @@
 						"protocol": "I2C",
 						"imu": "IMU_LSM6DSV",
 						"address": 107,
-						"int": "4",
+						"int": "9",
 						"rotation": "DEG_0",
 						"scl": "6",
 						"sda": "5"
@@ -562,10 +562,10 @@
 				],
 				"PIN_IMU_INT_2": "2",
 				"BATTERY": {
-					"type": "BAT_INTERNAL",
+					"type": "BAT_EXTERNAL",
 					"r1": 100,
-					"r2": 220,
-					"shieldR": 180,
+					"r2": 100,
+					"shieldR": 0,
 					"pin": "1"
 				},
 				"LED": {

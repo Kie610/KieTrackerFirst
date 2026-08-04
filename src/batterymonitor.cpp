@@ -29,6 +29,44 @@
 ADC_MODE(ADC_VCC);
 #endif
 
+#if defined(ESP32) && BATTERY_MONITOR == BAT_EXTERNAL
+namespace {
+
+// A divider built from large resistors keeps sleep current low but presents a
+// high source impedance to the ADC, and boards that leave out the filter
+// capacitor then read occasional spikes. Discarding one conversion lets the
+// sample-and-hold charge, and taking the median of the rest drops outliers
+// instead of smearing them through the result the way a mean would. This only
+// removes jitter: a steady droop stays, and BATTERY_SHIELD_RESISTANCE
+// calibration is what absorbs that.
+uint32_t readBatteryMilliVolts() {
+#if BATTERY_ADC_SAMPLES > 1
+	analogReadMilliVolts(PIN_BATTERY_LEVEL);
+
+	uint32_t samples[BATTERY_ADC_SAMPLES];
+	for (uint8_t i = 0; i < BATTERY_ADC_SAMPLES; i++) {
+		samples[i] = analogReadMilliVolts(PIN_BATTERY_LEVEL);
+	}
+
+	for (uint8_t i = 1; i < BATTERY_ADC_SAMPLES; i++) {
+		uint32_t value = samples[i];
+		uint8_t j = i;
+		while (j > 0 && samples[j - 1] > value) {
+			samples[j] = samples[j - 1];
+			j--;
+		}
+		samples[j] = value;
+	}
+
+	return samples[BATTERY_ADC_SAMPLES / 2];
+#else
+	return analogReadMilliVolts(PIN_BATTERY_LEVEL);
+#endif
+}
+
+}  // namespace
+#endif
+
 void BatteryMonitor::Setup() {
 #if BATTERY_MONITOR == BAT_MCP3021 || BATTERY_MONITOR == BAT_INTERNAL_MCP3021
 	for (uint8_t i = 0x48; i < 0x4F; i++) {
@@ -75,8 +113,7 @@ void BatteryMonitor::Loop() {
 				* ADCMultiplier;
 #endif
 #if defined(ESP32) && BATTERY_MONITOR == BAT_EXTERNAL
-		voltage
-			= ((float)analogReadMilliVolts(PIN_BATTERY_LEVEL)) / 1000 * ADCMultiplier;
+		voltage = ((float)readBatteryMilliVolts()) / 1000 * ADCMultiplier;
 #endif
 #if BATTERY_MONITOR == BAT_MCP3021 || BATTERY_MONITOR == BAT_INTERNAL_MCP3021
 		if (address > 0) {

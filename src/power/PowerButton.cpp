@@ -34,7 +34,18 @@ namespace SlimeVR::Power {
 
 namespace {
 SlimeVR::Logging::Logger powerButtonLogger{"PowerButton"};
-}
+
+#if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+// Kept in RTC memory so they survive deep sleep. Verifying ten consecutive
+// sleep/wake cycles otherwise means counting reboots by eye, and a spurious wake
+// is easy to miss that way: if the tracker wakes without a press, sleep entries
+// climbs while button wakes does not, and the gap between the two says which
+// half of the cycle is misbehaving. Both are cleared on any start that is not an
+// EXT0 wake, so a power cycle or reset begins a fresh run.
+RTC_DATA_ATTR uint32_t rtcSleepEntries = 0;
+RTC_DATA_ATTR uint32_t rtcButtonWakes = 0;
+#endif
+}  // namespace
 
 void PowerButton::setup() {
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
@@ -43,7 +54,28 @@ void PowerButton::setup() {
 
 	const auto wakeCause = esp_sleep_get_wakeup_cause();
 	if (wakeCause == ESP_SLEEP_WAKEUP_EXT0) {
-		powerButtonLogger.info("Woke from momentary power button");
+		rtcButtonWakes++;
+		powerButtonLogger.info(
+			"Woke from momentary power button on GPIO%d; sleep entries=%u, button "
+			"wakes=%u",
+			MOMENTARY_POWER_BUTTON_PIN,
+			static_cast<unsigned>(rtcSleepEntries),
+			static_cast<unsigned>(rtcButtonWakes)
+		);
+	} else {
+		rtcSleepEntries = 0;
+		rtcButtonWakes = 0;
+		powerButtonLogger.info(
+			"Cold start on GPIO%d power button; wake cause %d",
+			MOMENTARY_POWER_BUTTON_PIN,
+			static_cast<int>(wakeCause)
+		);
+	}
+
+	if (m_WaitingForRelease) {
+		powerButtonLogger.info(
+			"Power button is still held at boot; sleep stays disarmed until release"
+		);
 	}
 #endif
 }
@@ -119,7 +151,12 @@ void PowerButton::enterDeepSleep() {
 		return;
 	}
 
-	powerButtonLogger.info("Entering deep sleep; press the button to wake");
+	rtcSleepEntries++;
+	powerButtonLogger.info(
+		"Entering deep sleep #%u; press GPIO%d to wake",
+		static_cast<unsigned>(rtcSleepEntries),
+		MOMENTARY_POWER_BUTTON_PIN
+	);
 	Serial.flush();
 	esp_deep_sleep_start();
 #endif
