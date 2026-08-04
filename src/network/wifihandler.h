@@ -61,6 +61,10 @@ private:
 
 	void reportWifiProgress();
 	void setStaticIPIfDefined();
+#if !ESP8266
+	// Surfaces the IDF disconnect reason, which WiFi.status() throws away.
+	static void onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info);
+#endif
 	void onConnected();
 
 	static String getSSID();

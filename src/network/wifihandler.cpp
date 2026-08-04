@@ -31,6 +31,84 @@
 
 namespace SlimeVR {
 
+#if !ESP8266
+namespace {
+
+// The event callback has to be static, so it cannot reach the instance logger.
+SlimeVR::Logging::Logger wifiEventLogger{"WiFiHandler"};
+
+// WiFi.status() only exposes WL_* states, so a disconnect that the radio
+// understood precisely arrives here as a vague "Timeout". The IDF reason code is
+// what actually says whether the AP went away, the handshake failed, or the
+// station gave up on beacons, and the last one is invisible without it. Router
+// logs see only what the station transmitted -- reason 8 "leaving BSS" looks
+// like a deliberate disconnect from the AP side even when the real cause was
+// that beacons stopped arriving at the edge of range.
+const char* wifiDisconnectReasonName(uint8_t reason) {
+	switch (reason) {
+		case WIFI_REASON_AUTH_EXPIRE: return "AUTH_EXPIRE";
+		case WIFI_REASON_AUTH_LEAVE: return "AUTH_LEAVE";
+		case WIFI_REASON_ASSOC_EXPIRE: return "ASSOC_EXPIRE";
+		case WIFI_REASON_ASSOC_TOOMANY: return "ASSOC_TOOMANY (AP is full)";
+		case WIFI_REASON_NOT_AUTHED: return "NOT_AUTHED";
+		case WIFI_REASON_NOT_ASSOCED: return "NOT_ASSOCED";
+		case WIFI_REASON_ASSOC_LEAVE: return "ASSOC_LEAVE (we left)";
+		case WIFI_REASON_HANDSHAKE_TIMEOUT: return "HANDSHAKE_TIMEOUT (wrong password?)";
+		case WIFI_REASON_NO_AP_FOUND: return "NO_AP_FOUND (out of range or wrong SSID)";
+		case WIFI_REASON_AUTH_FAIL: return "AUTH_FAIL";
+		case WIFI_REASON_ASSOC_FAIL: return "ASSOC_FAIL";
+		case WIFI_REASON_BEACON_TIMEOUT: return "BEACON_TIMEOUT (signal too weak)";
+		case WIFI_REASON_CONNECTION_FAIL: return "CONNECTION_FAIL";
+		default: return "see esp_wifi_types.h";
+	}
+}
+
+}  // namespace
+
+void WiFiNetwork::onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info) {
+	switch (event) {
+		case ARDUINO_EVENT_WIFI_STA_CONNECTED: {
+			const auto& e = info.wifi_sta_connected;
+			wifiEventLogger.info(
+				"Associated on channel %u, BSSID %02x:%02x:%02x:%02x:%02x:%02x, RSSI %d "
+				"dBm",
+				e.channel,
+				e.bssid[0],
+				e.bssid[1],
+				e.bssid[2],
+				e.bssid[3],
+				e.bssid[4],
+				e.bssid[5],
+				WiFi.RSSI()
+			);
+			break;
+		}
+		case ARDUINO_EVENT_WIFI_STA_DISCONNECTED: {
+			const auto reason = info.wifi_sta_disconnected.reason;
+			// RSSI is only meaningful while associated; once the link is down the
+			// driver reports 0, which reads like a measurement and is not one.
+			const int rssi = WiFi.RSSI();
+			if (rssi != 0) {
+				wifiEventLogger.warn(
+					"Disconnected: reason %u (%s), RSSI %d dBm",
+					reason,
+					wifiDisconnectReasonName(reason),
+					rssi
+				);
+			} else {
+				wifiEventLogger.warn(
+					"Disconnected: reason %u (%s), RSSI unavailable (not associated)",
+					reason,
+					wifiDisconnectReasonName(reason)
+				);
+			}
+			break;
+		}
+		default: break;
+	}
+}
+#endif
+
 void WiFiNetwork::reportWifiProgress() {
 	if (lastWifiReportTime + 1000 < millis()) {
 		lastWifiReportTime = millis();
@@ -67,6 +145,9 @@ void WiFiNetwork::setUp() {
 	WiFi.persistent(true);
 	WiFi.mode(WIFI_STA);
 	WiFi.hostname("SlimeVR FBT Tracker");
+#if !ESP8266
+	WiFi.onEvent(onWiFiEvent);
+#endif
 	wifiHandlerLogger.info(
 		"Loaded credentials for SSID '%s' and pass length %d",
 		getSSID().c_str(),
