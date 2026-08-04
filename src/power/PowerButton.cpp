@@ -6,6 +6,7 @@
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
 #include <WiFi.h>
 #include <driver/rtc_io.h>
+#include <esp_attr.h>
 #include <esp_sleep.h>
 #include <esp_wifi.h>
 #endif
@@ -30,20 +31,71 @@ static_assert(
 );
 #endif
 
+#if defined(ESP32S3) && defined(MOMENTARY_POWER_BUTTON_PIN) \
+	&& defined(PIN_IMU_INT)
+static_assert(
+	MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_INT,
+	"The power button and the IMU INT1 line cannot share one pin"
+);
+// INT1 is unused by this firmware, but it is wired and kept on an RTC GPIO so a
+// later wake-on-motion path can arm it as an EXT1 source without rewiring.
+static_assert(
+	PIN_IMU_INT >= 0 && PIN_IMU_INT <= 21,
+	"IMU INT1 must stay on an RTC GPIO (0..21) to remain usable as a wake source"
+);
+#endif
+
 namespace SlimeVR::Power {
 
 namespace {
 SlimeVR::Logging::Logger powerButtonLogger{"PowerButton"};
-}
+
+#if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+// Retained across deep sleep, cleared on a real power-on or external reset.
+// The ten-cycle sleep/wake hardware check reads these off the serial log
+// instead of relying on the operator to count presses.
+RTC_DATA_ATTR uint32_t rtcDeepSleepEntries = 0;
+RTC_DATA_ATTR uint32_t rtcButtonWakeCount = 0;
+#endif
+}  // namespace
 
 void PowerButton::setup() {
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+	const auto wakePin = static_cast<gpio_num_t>(MOMENTARY_POWER_BUTTON_PIN);
+	const auto wakeCause = esp_sleep_get_wakeup_cause();
+
+	// enterDeepSleep held the RTC pull-up on this pad. Release the RTC driver
+	// before pinMode, otherwise the normal GPIO peripheral does not own the pin.
+	rtc_gpio_deinit(wakePin);
+
 	pinMode(MOMENTARY_POWER_BUTTON_PIN, INPUT_PULLUP);
 	m_WaitingForRelease = digitalRead(MOMENTARY_POWER_BUTTON_PIN) == LOW;
 
-	const auto wakeCause = esp_sleep_get_wakeup_cause();
 	if (wakeCause == ESP_SLEEP_WAKEUP_EXT0) {
-		powerButtonLogger.info("Woke from momentary power button");
+		++rtcButtonWakeCount;
+		powerButtonLogger.info(
+			"Woke from momentary power button on GPIO%d; sleep entries=%u, button "
+			"wakes=%u",
+			MOMENTARY_POWER_BUTTON_PIN,
+			static_cast<unsigned>(rtcDeepSleepEntries),
+			static_cast<unsigned>(rtcButtonWakeCount)
+		);
+	} else {
+		// Power-on or external reset: the retained counters are not meaningful.
+		rtcDeepSleepEntries = 0;
+		rtcButtonWakeCount = 0;
+		powerButtonLogger.info(
+			"Cold start on GPIO%d power button; wake cause %d, hold %u ms to sleep",
+			MOMENTARY_POWER_BUTTON_PIN,
+			static_cast<int>(wakeCause),
+			static_cast<unsigned>(MOMENTARY_POWER_BUTTON_HOLD_MS)
+		);
+	}
+
+	if (m_WaitingForRelease) {
+		powerButtonLogger.info(
+			"Power button is still held at boot; sleep stays disarmed until release"
+		);
 	}
 #endif
 }
@@ -119,7 +171,12 @@ void PowerButton::enterDeepSleep() {
 		return;
 	}
 
-	powerButtonLogger.info("Entering deep sleep; press the button to wake");
+	++rtcDeepSleepEntries;
+	powerButtonLogger.info(
+		"Entering deep sleep #%u; press GPIO%d to wake",
+		static_cast<unsigned>(rtcDeepSleepEntries),
+		MOMENTARY_POWER_BUTTON_PIN
+	);
 	Serial.flush();
 	esp_deep_sleep_start();
 #endif

@@ -30,7 +30,7 @@ ratio, not the absolute value.
 | `GND` | U1 `GND` (right column) — U2 `GND` — SW1 — R3 — C1 — BT1 `-` |
 | `SDA` | U1 `D4` / GPIO5 — U2 `SDA` |
 | `SCL` | U1 `D5` / GPIO6 — U2 `SCL` |
-| `IMU_INT1` | U1 `D3` / GPIO4 — U2 `INT1` (optional, unused by current firmware) |
+| `IMU_INT1` | U1 `D9` / GPIO8 — U2 `INT1` (wired now, unused by current firmware) |
 | `PWR_BTN` | U1 `D8` / GPIO7 — R1 — SW1 |
 | `BAT_SENSE` | U1 `D0` / GPIO1 — R2 — R3 — C1 |
 | `BAT+` | BT1 `+` — (SW2) — XIAO `BAT+` pad — R2 |
@@ -41,7 +41,14 @@ Not wired, and deliberately so:
   top-side `SDO` solder jumper shorts `SDO` to GND and selects `0x6A`; leave it
   open.
 - U2 `OSDO`, `OCS`, `SCX`, `SDX`, `INT2`: OIS auxiliary SPI, unused.
-- U1 `5V` (VBUS), `D1`, `D2`, `D6`, `D7`, `D9`, `D10`: unused.
+- U1 `5V` (VBUS), `D1`, `D2`, `D3`, `D6`, `D7`, `D10`: unused.
+
+`IMU_INT1` moved from `D3` / GPIO4 to `D9` / GPIO8 on 2026-08-04. Both are RTC
+GPIOs, so either would work as a future EXT1 wake source, but `D9` sits directly
+beside `D8` / GPIO7 in the XIAO's right pad column. That puts the button line and
+the INT1 line on the same board edge as `3V3` and `GND`, so only `SDA` / `SCL`
+leave from the left column and the wrap-around wiring drops from four crossings
+to two. `D10` / GPIO9 is the documented alternate if `D9` is ever needed for SPI.
 - External I2C pull-ups: the module already has 4.7 kOhm on `SDA` and `SCL`.
 
 ## ElectroCookie mini board

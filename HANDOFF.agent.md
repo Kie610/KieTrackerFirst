@@ -1,6 +1,6 @@
 # Agent handoff v1
 
-updated: 2026-08-04
+updated: 2026-08-04 (INT1 -> GPIO8, sleep/wake counters, Notion supplement rebuilt)
 repo: Kie610/KieTrackerFirst
 primary_branch: xiao-lsm6dsv
 fork_source: upstream = SlimeVR/SlimeVR-Tracker-ESP, mirrored by `main` only
@@ -24,9 +24,12 @@ complete:
 - C: The Notion guide was corrected on 2026-08-03: chapter 05 had `SA0 -> GND -> 0x6A`, which contradicts the confirmed `SA0 High -> 0x6B`. Chapter 05 now carries the diagram, the `0x6B` strap, a D8/GPIO7 button row, and 100 kHz pull-up guidance; chapter 01 now uses the Seeed-documented 50 mA (Fast) / 3.8 mA (Trickle) charge current and flags its 100 mA column as unverified.
 - C: The build target is an ElectroCookie mini solderable breadboard, 17 columns by 5+5 rows wired 1:1 like a breadboard, 50.8 x 38.1 mm. For each column, `A`-`E` are one node and `F`-`J` another, so both modules must straddle the centre channel or their pins short. `docs/perfboard-netlist.md` holds the parts, the eight nets, the deliberately unconnected pins, and the legal row pairs.
 - C: `hardware/tracker-perfboard/` holds a Konnect-generated KiCad project skeleton (`.kicad_pro`, `.kicad_sch`, `.kicad_pcb`). The schematic is still empty; `docs/perfboard-schematic-build-spec.md` is the self-contained instruction for building it, including the `U1`/`U2` custom symbol definitions and nine nets (it splits `BAT+` into `BAT+_RAW` across the optional switch).
+- C: `IMU_INT1` moved from `D3`/GPIO4 to `D9`/GPIO8 on 2026-08-04 at owner request (GPIO8 or GPIO9). Both are ESP32-S3 RTC GPIOs and neither is a strapping pin, so the choice is layout-driven: `D9` is adjacent to the `D8`/GPIO7 button pad in the right column, which keeps the button, INT1, `3V3`, and `GND` on one board edge and drops the wrap-around crossings from four to two. `D10`/GPIO9 is the documented alternate. The firmware still never reads INT1; the wire and the pin reservation only keep a later EXT1 wake-on-motion path open.
+- C: `PowerButton` keeps `rtcDeepSleepEntries` and `rtcButtonWakeCount` in RTC memory, cleared on power-on or external reset, and logs the wake path on every boot. This supplies the ten-cycle sleep/wake evidence without operator counting. `setup` now calls `rtc_gpio_deinit` before `pinMode` so the pad leaves the RTC driver after an EXT0 wake.
 - C: `xiao-lsm6dsv` contains the codex implementation, the claude handoff update through `04fbb29`, the 2026-08-01 hardware record merged from `codex/xiao-lsm6dsv-handoff`@`7142cec`, and the momentary-button Deep Sleep work merged from `codex/momentary-deep-sleep`@`d5e5bf3`; `main` remains the upstream mirror.
 
 verified:
+- C: 2026-08-04 — evidence: status=PASS; kind=compile; command=PlatformIO four firmware environments plus `test` for both XIAO environments with `--without-uploading --without-testing` and `git diff --check`; environment=Windows/PlatformIO 6.1.19, no hardware connected, no I2C clock applied; scope=re-verification after the INT1 GPIO4->GPIO8 move, the RTC sleep/wake counters, and the expanded contract asserts; compilation only with 0 executed test cases; counts=passed=8, failed=0, skipped=0, not-run=4 hardware/Unity runs
 - C: 2026-08-01 — evidence: status=PASS; kind=hardware; command=serial reset after power cycles 1--10/10; environment=Windows/XIAO ESP32-S3/COM6/100 kHz; scope=replacement IMU `0x6B` WHO_AM_I=`0x70` plus gyro/rest calibration on every cycle; counts=passed=20, failed=0, skipped=0, not-run=0
 - C: 2026-08-01 — evidence: status=FAIL; kind=hardware; command=serial capture after USB reconnect; environment=Windows/XIAO ESP32-S3/COM6/100 kHz; scope=prior IMU held SCL low, `0x6B` READ_FAILURE tx=0 rx=0/1, and measured about 0 ohms VCC to GND while unpowered; counts=passed=0, failed=1, skipped=0, not-run=0
 - C: 2026-07-30 — evidence: status=PASS; kind=hardware; command=Arduino IDE 2.3.10 upload and serial monitor; environment=Windows/XIAO ESP32-S3/COM6/LSM6DSV/100 kHz; scope=WHO_AM_I `0x70` and safe scan found only `0x6B`; counts=passed=2, failed=0, skipped=0, not-run=0
@@ -44,6 +47,7 @@ not-run:
 - U: U9 the pad-row spacing of the XIAO and of the LSM6DSV module has not been measured, so no placement on the ElectroCookie grid is fixed. Calipers settle it.
 - U: U10 two build decisions are open: whether a slide switch sits in the `BAT+` line, and whether the divider uses 100 kOhm (about 21 uA) or 220 kOhm (about 9.5 uA).
 - U: U11 momentary-button Sleep/Wake runtime, its ten-cycle hardware run, and completed-tracker Deep Sleep current remain not run.
+- U: U12 INT1 on GPIO8 is wired in the documented design only. No hardware carries the wire yet, so neither the "INT1 does not disturb I2C" check nor the "GPIO8 does not affect boot" check has been run. Wake-on-motion is unimplemented; only the pin reservation exists.
 - A: Six-face acceleration calibration remains unnecessary unless later mounting tests show material error.
 - C: U5 is resolved. The 2026-08-01 captures were taken over COM6, so the earlier "no serial port enumerated" blocker no longer applies to the IMU work.
 - C: U6 is resolved. `codex/momentary-deep-sleep` was merged into `xiao-lsm6dsv` on 2026-08-04.
@@ -52,6 +56,7 @@ not-run:
 
 - C: Use 3.3 V, SDA GPIO5, SCL GPIO6, SA0 High, address `0x6B`, WHO_AM_I register `0x0F=0x70`, and 100 kHz production I2C; safe scan `0x08..0x77`; explicit alternate `0x6A`; never derive `0x6C`.
 - C: Use a normally-open button from GPIO7 to GND plus external 10 kOhm pull-up to 3V3; never route battery current through it.
+- C: Run `INT1` to GPIO8 in the final build even though the firmware never reads it. Retrofitting the wire into a finished assembly costs far more than running it now, and it is the only path to wake-on-motion.
 - C: Hold two seconds, release to sleep, and press to wake; boot stays disarmed until the first release.
 - C: Preserve the network packet format; detailed probe failures remain serial-only and map to `SENSOR_ERROR`.
 - C: `xiao-lsm6dsv` is primary development; `main` only mirrors `upstream/main`. Flow is upstream/main -> main -> xiao-lsm6dsv.
@@ -61,7 +66,8 @@ not-run:
 
 ## Next
 
-- Flash XIAO and run short-press, hold/release, wake-log, IMU identity, Server reconnect, and ten-cycle checks; blocked-by: U7 (tracker not connected)
+- Flash XIAO and run short-press, hold/release, wake-log, IMU identity, Server reconnect, and ten-cycle checks; read the count off `sleep entries` / `button wakes`; blocked-by: U7 (tracker not connected)
+- Run the INT1 wire on GPIO8 and confirm I2C and boot are unchanged; blocked-by: U12
 - Measure complete-tracker awake/Deep Sleep current and temperature on battery; blocked-by: U2
 - Capture address NACK, transmission error, read failure, and identity mismatch logs; mismatch and short-read paths remain contract-test-only; blocked-by: none
 - Build the schematic per `docs/perfboard-schematic-build-spec.md`; blocked-by: U8 (interactive session and `kicad-cli` on PATH)

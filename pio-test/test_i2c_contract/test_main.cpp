@@ -53,7 +53,7 @@ static_assert(resolveSensorAddress<IncrementingAddressFixture>(true) == 0x69);
 #if BOARD == BOARD_XIAO_ESP32S3
 static_assert(PIN_IMU_SDA == 5);
 static_assert(PIN_IMU_SCL == 6);
-static_assert(PIN_IMU_INT == 4);
+static_assert(PIN_IMU_INT == 8);
 static_assert(PIN_IMU_INT_2 == 2);
 static_assert(PIN_BATTERY_LEVEL == 1);
 static_assert(BATTERY_MONITOR == BAT_INTERNAL);
@@ -68,12 +68,24 @@ static_assert(MOMENTARY_POWER_BUTTON_HOLD_MS == 2000);
 static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_SDA);
 static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_SCL);
 static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_IMU_INT);
+static_assert(MOMENTARY_POWER_BUTTON_PIN != PIN_BATTERY_LEVEL);
+// Both the wake pin and the reserved INT1 line must stay on ESP32-S3 RTC GPIOs
+// so EXT0 works today and a later wake-on-motion path needs no rewiring.
+static_assert(MOMENTARY_POWER_BUTTON_PIN <= 21);
+static_assert(PIN_IMU_INT <= 21);
+static_assert(PIN_IMU_INT != PIN_IMU_SDA);
+static_assert(PIN_IMU_INT != PIN_IMU_SCL);
+static_assert(PIN_IMU_INT != PIN_IMU_INT_2);
+static_assert(PIN_IMU_INT != PIN_BATTERY_LEVEL);
+// GPIO0 / 3 / 45 / 46 are ESP32-S3 strapping pins; none of ours may land there.
+static_assert(MOMENTARY_POWER_BUTTON_PIN != 0 && MOMENTARY_POWER_BUTTON_PIN != 3);
+static_assert(PIN_IMU_INT != 0 && PIN_IMU_INT != 3);
 #endif
 
 void testCompileTimeContractsArePresent() {
 	TEST_ASSERT_TRUE_MESSAGE(
 		true,
-		"32 I2C, XIAO, and power-button contract cases passed"
+		"42 I2C, XIAO, and power-button contract cases passed"
 	);
 }
 

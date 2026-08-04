@@ -12,7 +12,7 @@ server procedures are in the [SlimeVR documentation](https://docs.slimevr.dev/).
 | GND | GND | Common ground |
 | SDA | D4 / GPIO5 | Pull up to 3.3 V |
 | SCL | D5 / GPIO6 | Pull up to 3.3 V |
-| IMU INT | D3 / GPIO4 | Defined for this target; not connected or used by LSM6DSV SoftFusion yet |
+| IMU INT | D9 / GPIO8 | Wired in the final build, but not used by LSM6DSV SoftFusion. RTC GPIO, so it stays available as a future EXT1 wake source |
 | AUX IMU INT | D1 / GPIO2 | Reserved; no auxiliary IMU is installed |
 | Battery ADC | D0 / GPIO1 | Reserved for the later battery build; unused in USB-powered mode |
 | SDO / SA0 | High, held by the module's own 4.7 kOhm pull-up | Selects I2C address `0x6B`. No wire is needed. Bridging the top-side `SDO` solder jumper connects it to GND, selects `0x6A`, and the firmware then finds no sensor |
@@ -45,9 +45,19 @@ it open, or the firmware will find no sensor at `0x6B`.
 The configured interrupt pins are not physically connected in the current
 hardware, and the LSM6DSV SoftFusion path does not use them: `SoftFusionSensor`
 takes `intPin` as an optional argument that defaults to `nullptr`, and the
-LSM6DSV driver polls the FIFO over I2C instead. Wiring `INT1` is therefore
-optional today; it is only worth running if motion wake from Deep Sleep is
-attempted later. Battery-voltage measurement is still undecided.
+LSM6DSV driver polls the FIFO over I2C instead. `INT1` therefore carries no
+signal that the firmware reads today. It is still run in the final build,
+because adding a wire to a finished, glued-down assembly is far more work than
+running it now, and because motion wake from Deep Sleep is the one planned
+feature that needs it. Battery-voltage measurement is still undecided.
+
+`IMU INT` moved from GPIO4 to GPIO8 on 2026-08-04. GPIO8 and GPIO9 are both RTC
+GPIOs on the ESP32-S3, so either can be armed as an EXT1 wake source; GPIO4
+could too, but it sits in the left pad column next to `SDA` / `SCL`, whereas
+GPIO8 (`D9`) is next to the GPIO7 (`D8`) button pad in the right column. Keeping
+the button and INT1 on the same edge as `3V3` and `GND` removes two wire
+crossings from the perfboard layout. GPIO9 (`D10`) is the documented alternate.
+Neither is an ESP32-S3 strapping pin (those are GPIO0, 3, 45, 46).
 
 ## Firmware defaults
 
@@ -56,7 +66,8 @@ replace the dedicated target with the older generic `BOARD_CUSTOM` path.
 
 - board: `BOARD_XIAO_ESP32S3`
 - primary IMU: `IMU_LSM6DSV` at `0x6B`, confirmed rotation `DEG_0`
-- common pins: SDA GPIO5, SCL GPIO6, IMU INT GPIO4, AUX INT GPIO2, battery ADC GPIO1
+- common pins: SDA GPIO5, SCL GPIO6, IMU INT GPIO8, AUX INT GPIO2, battery ADC GPIO1
+- power button: GPIO7, active low, 2000 ms hold
 - USB-powered monitoring: `BAT_INTERNAL`, shield resistance 180, R1 100, R2 220
 
 `BAT_INTERNAL` prevents external battery-ADC sampling in the current USB-powered

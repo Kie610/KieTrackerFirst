@@ -17,7 +17,10 @@ is not documented by the seller; read it from the silkscreen.
   the internal pull-up, but the external resistor keeps the RTC wake input in a
   defined state through Deep Sleep.
 - Keep the LSM6DSV wiring at 3.3 V, SDA GPIO5, SCL GPIO6, and address `0x6B`.
-- GPIO4 / INT1 is not a wake source in this prototype.
+- Run `INT1` to `D9` / GPIO8. It is not a wake source in this prototype and the
+  firmware never reads it, but GPIO8 is an RTC GPIO, so leaving the wire in place
+  keeps a later wake-on-motion path open without opening a finished assembly.
+  `D10` / GPIO9 is the alternate. Neither is a strapping pin.
 
 Never put the momentary button in series with the battery. It is a logic input,
 not a power switch.
@@ -41,6 +44,23 @@ RTC pull-up on GPIO7, configures GPIO7 as an active-low EXT0 wake source, and
 starts Deep Sleep. Arming EXT0 while the contact still bounces would wake the
 tracker immediately. The LSM6DSV driver changes FIFO mode and batching to zero,
 then writes zero to `CTRL2_G` and `CTRL1_XL` so both ODR fields select power-down.
+
+On the next boot `PowerButton::setup` calls `rtc_gpio_deinit` before `pinMode`,
+so the pad returns from the RTC driver to the normal GPIO peripheral after an
+EXT0 wake.
+
+Two counters live in RTC memory and survive Deep Sleep: `rtcDeepSleepEntries`
+and `rtcButtonWakeCount`. A power-on or external reset clears both. Every boot
+logs which of the two paths it took, so the ten-cycle sleep/wake check reads its
+count off the serial log instead of relying on the operator to count presses:
+
+```text
+Entering deep sleep #7; press GPIO7 to wake
+Woke from momentary power button on GPIO7; sleep entries=7, button wakes=7
+```
+
+A cold start instead logs `Cold start on GPIO7 power button; wake cause 0`, and
+a button held at boot logs that sleep stays disarmed until it is released.
 
 The XIAO PlatformIO environments enable this prototype with:
 

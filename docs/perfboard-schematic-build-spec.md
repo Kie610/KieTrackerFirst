@@ -93,7 +93,7 @@ Substitute a close equivalent if a lib_id does not resolve, and record which.
 | `GND` | U1 `GND` — U2 `GND` — SW1 — R3 — C1 — BT1 `-` |
 | `SDA` | U1 `D4`/GPIO5 — U2 `SDA` |
 | `SCL` | U1 `D5`/GPIO6 — U2 `SCL` |
-| `IMU_INT1` | U1 `D3`/GPIO4 — U2 `INT1` |
+| `IMU_INT1` | U1 `D9`/GPIO8 — U2 `INT1` |
 | `PWR_BTN` | U1 `D8`/GPIO7 — R1 — SW1 |
 | `BAT_SENSE` | U1 `D0`/GPIO1 — R2 — R3 — C1 |
 | `BAT+` | SW2 — U1 `BAT+` pad — R2 |
@@ -109,7 +109,9 @@ switch as one node. A schematic cannot represent that, so the cell side is named
 in the netlist; it is drawn fitted. If it is later dropped, merge the two nets
 back into `BAT+`.
 
-`IMU_INT1` is wired but unused by the current firmware.
+`IMU_INT1` is wired but unused by the current firmware. It is held on `D9`/GPIO8
+because that pad is an RTC GPIO and sits next to the `D8`/GPIO7 button pad, which
+keeps a later wake-on-motion path available without rewiring.
 
 ## Deliberately unconnected
 
