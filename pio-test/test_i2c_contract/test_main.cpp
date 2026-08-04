@@ -56,10 +56,22 @@ static_assert(PIN_IMU_SCL == 6);
 static_assert(PIN_IMU_INT == 9);
 static_assert(PIN_IMU_INT_2 == 2);
 static_assert(PIN_BATTERY_LEVEL == 1);
-static_assert(BATTERY_MONITOR == BAT_INTERNAL);
-static_assert(BATTERY_SHIELD_RESISTANCE == 180);
+// The 100k/100k divider on BAT_SENSE is fitted, so the ADC reads it directly.
+// shieldR is 0 because that resistor belongs to the SlimeVR shield topology and
+// does not exist here; equal R1/R2 with no shield resistor is what makes the
+// multiplier exactly 2.
+static_assert(BATTERY_MONITOR == BAT_EXTERNAL);
+static_assert(BATTERY_SHIELD_RESISTANCE == 0);
 static_assert(BATTERY_SHIELD_R1 == 100);
-static_assert(BATTERY_SHIELD_R2 == 220);
+static_assert(BATTERY_SHIELD_R2 == 100);
+// batterymonitor.h derives ADCMultiplier as (R1 + R2 + SHIELD_RESISTANCE) / R1,
+// but that header is not pulled into the tests, so pin the same relationship
+// from the -D macros instead. Multiplication form keeps it exact whether the
+// macros expand to integers or floats. A 1:1 divider has to come out at 2.
+static_assert(
+	BATTERY_SHIELD_R1 + BATTERY_SHIELD_R2 + BATTERY_SHIELD_RESISTANCE
+	== 2 * BATTERY_SHIELD_R1
+);
 // No filter capacitor is fitted on the divider, so the reading must be median
 // filtered. An odd count keeps the median a real sample.
 static_assert(BATTERY_ADC_SAMPLES == 15);
