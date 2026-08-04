@@ -49,6 +49,10 @@ RTC_DATA_ATTR uint32_t rtcButtonWakes = 0;
 
 void PowerButton::setup() {
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+	// enterDeepSleep held the RTC pull-up on this pad. Release the RTC driver
+	// before pinMode, otherwise the normal GPIO peripheral does not own the pin.
+	rtc_gpio_deinit(static_cast<gpio_num_t>(MOMENTARY_POWER_BUTTON_PIN));
+
 	pinMode(MOMENTARY_POWER_BUTTON_PIN, INPUT_PULLUP);
 	m_WaitingForRelease = digitalRead(MOMENTARY_POWER_BUTTON_PIN) == LOW;
 
