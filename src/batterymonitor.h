@@ -41,6 +41,19 @@
 #define ADCVoltageMax 1.0
 #endif
 
+// Number of ADC conversions combined into one battery reading. 1 keeps the
+// original single-shot behaviour; a value above 1 discards one warm-up
+// conversion and then takes the median of this many samples. Must be odd so the
+// median is a real sample. Only the ESP32 BAT_EXTERNAL path uses it.
+#ifndef BATTERY_ADC_SAMPLES
+#define BATTERY_ADC_SAMPLES 1
+#endif
+static_assert(BATTERY_ADC_SAMPLES >= 1, "BATTERY_ADC_SAMPLES must be at least 1");
+static_assert(
+	BATTERY_ADC_SAMPLES % 2 == 1,
+	"BATTERY_ADC_SAMPLES must be odd so the median is a real sample"
+);
+
 #ifndef BATTERY_SHIELD_RESISTANCE
 #define BATTERY_SHIELD_RESISTANCE 180.0
 #endif
