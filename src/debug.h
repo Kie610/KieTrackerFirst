@@ -43,7 +43,9 @@
 
 // Debug information
 
+#ifndef LOG_LEVEL
 #define LOG_LEVEL LOG_LEVEL_DEBUG
+#endif
 
 #if LOG_LEVEL == LOG_LEVEL_TRACE
 #define DEBUG_SENSOR
@@ -60,7 +62,9 @@
 #define samplingRateInMillis 10
 
 // Sleeping options
+#ifndef POWERSAVING_MODE
 #define POWERSAVING_MODE POWER_SAVING_LEGACY  // Minimum causes sporadic data pauses
+#endif
 #if POWERSAVING_MODE >= POWER_SAVING_MINIMUM
 #define TARGET_LOOPTIME_MICROS (samplingRateInMillis * 1000)
 #endif

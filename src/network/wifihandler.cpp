@@ -154,8 +154,9 @@ void WiFiNetwork::setUp() {
 		getPassword().length()
 	);
 
-	trySavedCredentials();
-
+	// Power saving is configured before the first association attempt, not after.
+	// Otherwise the initial connect runs at the SDK default (WIFI_PS_MIN_MODEM on
+	// arduino-esp32), which is what made ping latency spike right after boot.
 #if ESP8266
 #if POWERSAVING_MODE == POWER_SAVING_NONE
 	WiFi.setSleepMode(WIFI_NONE_SLEEP);
@@ -184,6 +185,8 @@ void WiFiNetwork::setUp() {
 	}
 #endif
 #endif
+
+	trySavedCredentials();
 }
 
 void WiFiNetwork::onConnected() {
