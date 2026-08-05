@@ -555,7 +555,7 @@
 						"imu": "IMU_LSM6DSV",
 						"address": 107,
 						"int": "9",
-						"rotation": "DEG_0",
+						"rotation": "DEG_90",
 						"scl": "6",
 						"sda": "5"
 					}
