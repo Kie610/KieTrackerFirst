@@ -29,6 +29,7 @@
 #include "base64.hpp"
 #include "batterymonitor.h"
 #include "logging/Logger.h"
+#include "power/PowerButton.h"
 #include "utils.h"
 
 #ifdef ESP32
@@ -201,6 +202,17 @@ void printState() {
 		battery.getVoltage(),
 		battery.getLevel() * 100
 	);
+
+#if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+	// Reported here so a sleep/wake run can be read off a running board. Reading
+	// them from the boot line instead requires the host to attach, and attaching
+	// resets this chip, which is what blocked the multi-cycle check before.
+	logger.info(
+		"Deep sleep: entries=%u, button wakes=%u",
+		static_cast<unsigned>(SlimeVR::Power::PowerButton::getSleepEntries()),
+		static_cast<unsigned>(SlimeVR::Power::PowerButton::getButtonWakes())
+	);
+#endif
 }
 
 #ifdef ESP32

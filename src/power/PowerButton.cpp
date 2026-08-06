@@ -4,9 +4,11 @@
 #include "logging/Logger.h"
 
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+#include <Preferences.h>
 #include <WiFi.h>
 #include <driver/rtc_io.h>
 #include <esp_sleep.h>
+#include <esp_system.h>
 #include <esp_wifi.h>
 #endif
 
@@ -36,16 +38,63 @@ namespace {
 SlimeVR::Logging::Logger powerButtonLogger{"PowerButton"};
 
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
-// Kept in RTC memory so they survive deep sleep. Verifying ten consecutive
-// sleep/wake cycles otherwise means counting reboots by eye, and a spurious wake
-// is easy to miss that way: if the tracker wakes without a press, sleep entries
-// climbs while button wakes does not, and the gap between the two says which
-// half of the cycle is misbehaving. Both are cleared on any start that is not an
-// EXT0 wake, so a power cycle or reset begins a fresh run.
-RTC_DATA_ATTR uint32_t rtcSleepEntries = 0;
-RTC_DATA_ATTR uint32_t rtcButtonWakes = 0;
+// Held in NVS, not RTC memory. RTC memory does survive deep sleep, but reading it
+// requires a host to attach, and attaching makes the ESP32-S3 USB-Serial/JTAG issue
+// `rst:0x15 (USB_UART_CHIP_RESET)`, which loses the contents — so the act of
+// measuring destroyed the measurement. Flash survives every reset.
+//
+// The counters only ever increase; nothing clears them. A run is measured as the
+// difference between the values read before and after, which removes any need to
+// decide which resets should zero them.
+//
+// Keeping the two separate is what makes a failure legible: a wake with no press
+// raises sleep entries only, and a failure to sleep raises neither, so the gap
+// between them names the broken half.
+constexpr const char* kPrefsNamespace = "powerbtn";
+constexpr const char* kPrefsSleepKey = "sleeps";
+constexpr const char* kPrefsWakeKey = "wakes";
+
+uint32_t cachedSleepEntries = 0;
+uint32_t cachedButtonWakes = 0;
+
+void loadCounters() {
+	Preferences prefs;
+	if (!prefs.begin(kPrefsNamespace, true)) {
+		return;
+	}
+	cachedSleepEntries = prefs.getUInt(kPrefsSleepKey, 0);
+	cachedButtonWakes = prefs.getUInt(kPrefsWakeKey, 0);
+	prefs.end();
+}
+
+void storeCounters() {
+	Preferences prefs;
+	if (!prefs.begin(kPrefsNamespace, false)) {
+		powerButtonLogger.error("Could not open NVS to persist deep sleep counters");
+		return;
+	}
+	prefs.putUInt(kPrefsSleepKey, cachedSleepEntries);
+	prefs.putUInt(kPrefsWakeKey, cachedButtonWakes);
+	prefs.end();
+}
 #endif
 }  // namespace
+
+uint32_t PowerButton::getSleepEntries() {
+#if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+	return cachedSleepEntries;
+#else
+	return 0;
+#endif
+}
+
+uint32_t PowerButton::getButtonWakes() {
+#if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
+	return cachedButtonWakes;
+#else
+	return 0;
+#endif
+}
 
 void PowerButton::setup() {
 #if defined(ESP32) && defined(MOMENTARY_POWER_BUTTON_PIN)
@@ -56,23 +105,28 @@ void PowerButton::setup() {
 	pinMode(MOMENTARY_POWER_BUTTON_PIN, INPUT_PULLUP);
 	m_WaitingForRelease = digitalRead(MOMENTARY_POWER_BUTTON_PIN) == LOW;
 
+	loadCounters();
+
 	const auto wakeCause = esp_sleep_get_wakeup_cause();
 	if (wakeCause == ESP_SLEEP_WAKEUP_EXT0) {
-		rtcButtonWakes++;
+		cachedButtonWakes++;
+		storeCounters();
 		powerButtonLogger.info(
 			"Woke from momentary power button on GPIO%d; sleep entries=%u, button "
 			"wakes=%u",
 			MOMENTARY_POWER_BUTTON_PIN,
-			static_cast<unsigned>(rtcSleepEntries),
-			static_cast<unsigned>(rtcButtonWakes)
+			static_cast<unsigned>(cachedSleepEntries),
+			static_cast<unsigned>(cachedButtonWakes)
 		);
 	} else {
-		rtcSleepEntries = 0;
-		rtcButtonWakes = 0;
 		powerButtonLogger.info(
-			"Cold start on GPIO%d power button; wake cause %d",
+			"Cold start on GPIO%d power button; wake cause %d, reset reason %d, sleep "
+			"entries=%u, button wakes=%u",
 			MOMENTARY_POWER_BUTTON_PIN,
-			static_cast<int>(wakeCause)
+			static_cast<int>(wakeCause),
+			static_cast<int>(esp_reset_reason()),
+			static_cast<unsigned>(cachedSleepEntries),
+			static_cast<unsigned>(cachedButtonWakes)
 		);
 	}
 
@@ -155,10 +209,14 @@ void PowerButton::enterDeepSleep() {
 		return;
 	}
 
-	rtcSleepEntries++;
+	cachedSleepEntries++;
+	// Persisted before the log line, because the log is the part that can be lost:
+	// on this chip the host must not hold the port open across the sleep transition,
+	// so nobody may be listening when this prints.
+	storeCounters();
 	powerButtonLogger.info(
 		"Entering deep sleep #%u; press GPIO%d to wake",
-		static_cast<unsigned>(rtcSleepEntries),
+		static_cast<unsigned>(cachedSleepEntries),
 		MOMENTARY_POWER_BUTTON_PIN
 	);
 	Serial.flush();
