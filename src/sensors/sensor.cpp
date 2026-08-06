@@ -33,7 +33,12 @@ SensorStatus Sensor::getSensorState() {
 
 void Sensor::setAcceleration(Vector3 a) {
 	acceleration = a;
-	sensorOffset.sandwich(acceleration);
+	// `setFusedRotation` composes as `r * sensorOffset`, which makes sensorOffset the
+	// rotation from the tracker frame into the IMU frame. The acceleration arrives in
+	// the IMU frame, so returning it to the tracker frame needs the inverse. Applying
+	// sensorOffset itself, as upstream does, turns a 90 degree mounting offset into a
+	// 180 degree error in the reported acceleration while the rotation stays correct.
+	sensorOffset.inverse().sandwich(acceleration);
 	newAcceleration = true;
 }
 
