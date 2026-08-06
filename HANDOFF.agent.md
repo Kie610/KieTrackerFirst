@@ -1,6 +1,6 @@
 # Agent handoff v1
 
-updated: 2026-08-04
+updated: 2026-08-07
 repo: Kie610/KieTrackerFirst
 primary_branch: xiao-lsm6dsv
 fork_source: upstream = SlimeVR/SlimeVR-Tracker-ESP, mirrored by `main` only
@@ -12,6 +12,7 @@ goal: XIAO ESP32-S3 + LSM6DSV small wireless SlimeVR tracker
 ## State
 
 complete:
+- C: 2026-08-07 an adversarial desk review of the whole `main...xiao-lsm6dsv` diff was performed and recorded in `docs/review-2026-08-07.md`: two cross-board defects (F1 i2cscan ESP32S3 guard also hits SuperMini, F2 optional sensors lost the quiet EmptySensor path), one wasted per-sample computation (F3), two documentation/duplication items (F4, F5), one owner-decision proposal (F6 serial-wait on wake), one config refactor (F7), and four upstream-PR candidates (F9). Code inspection only — nothing was compiled or run, and no fix has been applied yet. Self-contained delegation prompts T1-T6 are in the same document.
 - C: Production defaults are XIAO ESP32-S3, LSM6DSV `0x6B`, WHO_AM_I `0x0F=0x70`, GPIO5/6, and 100 kHz. Scans use `0x08..0x77`; `0x7E` is never transmitted.
 - C: Startup diagnostics classify address NACK, transmission error, short read, and WHO_AM_I mismatch; network status remains `SENSOR_ERROR`.
 - C: The sensor rotation is `DEG_90`, corrected on 2026-08-05. It was `DEG_0` until then, and that value was **wrong**: the tracker's pitch and roll were swapped, so pitching forward displayed as rolling right and rolling right displayed as pitching back. All four boards carry the module at the same orientation, so the one board-level value serves the whole fleet.
@@ -138,6 +139,8 @@ not-run:
 
 ## Next
 
+- Fix review findings F1-F5 from `docs/review-2026-08-07.md` (i2cscan ESP32S3 guard leaking onto SuperMini, optional-sensor EmptySensor path lost for checked detection, per-sample `sensorOffset.inverse()`, stale RTC-memory comment in `PowerButton.h`, AlternateAddress/log duplication). Delegate each with the self-contained prompts T1-T5 in that document; compile-verify per AGENTS.md; blocked-by: none
+- Decide whether to skip the 2 s serial wait on EXT0 wake (review finding F6, prompt T6 in `docs/review-2026-08-07.md`); blocked-by: owner decision
 - Confirm in SlimeVR Server that tracking is smooth on the two completed trackers now that all four run the PS_NONE build; the 95 ms latency was measured and fixed on the test unit only, and the other boards have not been re-measured since flashing; blocked-by: none
 - Settle battery life by running the tracker to cutoff on battery, or by metering the battery lead directly; the USB-side figure leaves a 7-9.5 h spread, see U25; blocked-by: none
 - Measure Deep Sleep current with a microamp-capable meter; the USB meter cannot resolve it, see U26; blocked-by: no suitable instrument
