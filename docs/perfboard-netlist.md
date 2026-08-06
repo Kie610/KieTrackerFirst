@@ -14,6 +14,7 @@ measurements recorded in `HANDOFF.agent.md`.
 | R1 | 10 kOhm | GPIO7 pull-up to 3V3 |
 | R2 | 100 kOhm | Battery divider, high side (`BAT+` to sense node) |
 | R3 | 100 kOhm | Battery divider, low side (sense node to GND) |
+| C1 | 100 nF 50 V MLCC | ADC settling cap, across `R3` (sense node to GND) |
 | BT1 | Protected 1S Li-ion | To `BAT+` / `BAT-` on the XIAO back side |
 
 **Owner decision of 2026-08-04: the optional `SW2` slide switch is not fitted.**
@@ -25,12 +26,25 @@ alternative is declined, so divider idle draw stays at about 21 uA. The firmware
 multiplier depends on the ratio, not the absolute value, so it is unaffected
 either way.
 
-**Owner decision of 2026-08-04: the `C1` 100 nF ADC settling capacitor is not
-fitted.** The divider is deliberately high impedance to hold idle draw down,
-which leaves the ADC looking at a 50 kOhm source, and a single conversion from
-such a source picks up spike-like errors. Seeed's own XIAO battery-measurement
+**Owner decision of 2026-08-06 supersedes the 2026-08-04 one: `C1` is fitted**, a
+100 nF 50 V multilayer ceramic across `R3`, so between the `BAT_SENSE` node and
+`GND`. It is unpolarised and 50 V is far beyond the roughly 2 V this node ever
+sees. It does not change the divider ratio, so `ADCMultiplier` stays 2 and no
+firmware change follows from it. With `R2` and `R3` at 100 kOhm the settling time
+constant is about 5 ms, which is irrelevant against a periodic reading, and idle
+draw stays at about 21 uA.
+
+The software filtering described below **stays in place**. It was written to do
+this capacitor's job, and the two together are strictly better than either alone;
+there is nothing to disable. The paragraph is kept because it explains why the
+firmware looks the way it does.
+
+The original 2026-08-04 reasoning, for that history: the divider is deliberately
+high impedance to hold idle draw down, which leaves the ADC looking at a 50 kOhm
+source, and a single conversion from such a source picks up spike-like errors.
+Seeed's own XIAO battery-measurement
 guide hits the same thing with a 200k/200k divider and answers it by averaging
-16 readings. That job now sits in firmware instead of in a capacitor: the ESP32
+16 readings. That job sits in firmware as well as in the capacitor: the ESP32
 `BAT_EXTERNAL` path in `src/batterymonitor.cpp` throws one conversion away to
 charge the sample-and-hold, then takes the median of `BATTERY_ADC_SAMPLES`
 readings, set to 15 for both XIAO environments in `platformio.ini`. A median was
@@ -46,12 +60,12 @@ level is a coarse indicator here, so that is an accepted cost.
 | Net | Connections |
 | --- | --- |
 | `+3V3` | U1 `3V3` (right column) — U2 `3V3` — R1 |
-| `GND` | U1 `GND` (right column) — U2 `GND` — SW1 — R3 — BT1 `-` |
+| `GND` | U1 `GND` (right column) — U2 `GND` — SW1 — R3 — C1 — BT1 `-` |
 | `SDA` | U1 `D4` / GPIO5 — U2 `SDA` |
 | `SCL` | U1 `D5` / GPIO6 — U2 `SCL` |
 | `IMU_INT1` | U1 `D10` / GPIO9 — U2 `INT1` (unused by current firmware) |
 | `PWR_BTN` | U1 `D8` / GPIO7 — R1 — SW1 |
-| `BAT_SENSE` | U1 `D0` / GPIO1 — R2 — R3 |
+| `BAT_SENSE` | U1 `D0` / GPIO1 — R2 — R3 — C1 |
 | `BAT+` | BT1 `+` — XIAO `BAT+` pad — R2 |
 
 Not wired, and deliberately so:

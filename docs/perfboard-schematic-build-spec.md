@@ -86,6 +86,7 @@ The schematic is an empty skeleton — `(kicad_sch (version 20250610) (generator
 | R1 | 10k | GPIO7 pull-up to 3V3 |
 | R2 | 100k | Battery divider, high side (`BAT+` to sense node) |
 | R3 | 100k | Battery divider, low side (sense node to GND) |
+| C1 | 100nF | ADC settling cap across `R3`, `Device:C`, 50 V MLCC as fitted |
 | BT1 | Protected 1S Li-ion | To `BAT+` / `BAT-` on the XIAO back side |
 
 `SW2`, the optional slide switch in the `BAT+` line, was **dropped by owner
@@ -93,12 +94,17 @@ decision on 2026-08-04** and is no longer in the schematic. `R2` / `R3` are fixe
 at **100k** by the same decision; the 220k alternative that would have cut idle
 draw from about 21 uA to about 9.5 uA is declined.
 
-`C1`, the 100 nF ADC settling capacitor across `R3`, was **also dropped on
-2026-08-04** and is no longer in the schematic. Its job moved into firmware:
+`C1`, the 100 nF ADC settling capacitor across `R3`, was dropped on 2026-08-04 but
+**fitted and added back to the schematic on 2026-08-06** as a 100 nF 50 V MLCC. It
+sits between the `BAT_SENSE` node and `GND`, using the bundled `Device:C` symbol.
+The part count is therefore **eight**, not seven and not the original nine — `SW2`
+is still absent.
+
+The firmware filtering that was written to stand in for this capacitor **stays**:
 `src/batterymonitor.cpp` discards one conversion and takes the median of
-`BATTERY_ADC_SAMPLES` (15) readings on the ESP32 `BAT_EXTERNAL` path. See
-`docs/perfboard-netlist.md` for the reasoning and its limits. The part count is
-therefore **seven**, not nine.
+`BATTERY_ADC_SAMPLES` (15) readings on the ESP32 `BAT_EXTERNAL` path. The two
+address the same problem and are better together, so nothing was removed. See
+`docs/perfboard-netlist.md` for the reasoning and its limits.
 
 Set the Value field on every passive to the value in this table.
 
