@@ -7,6 +7,7 @@
 - Treat `docs/xiao-esp32s3-lsm6dsv.md` as the authoritative wiring and hardware-test procedure.
 - Resolve factual conflicts in this order: owner-provided hardware results; ST/Seeed official material; SlimeVR official documentation; module sales/assembly material; assumptions in code.
 - Read `docs/handoff-history.md` only when the compact handoff does not contain needed rationale.
+- When asked to fix findings from the 2026-08-07 adversarial review, read `docs/review-2026-08-07.md` first and follow the self-contained delegation prompt (T1-T6) for the requested task; no pasted prompt is needed.
 
 ## Branch policy
 
