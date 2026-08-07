@@ -38,7 +38,8 @@ void Sensor::setAcceleration(Vector3 a) {
 	// the IMU frame, so returning it to the tracker frame needs the inverse. Applying
 	// sensorOffset itself, as upstream does, turns a 90 degree mounting offset into a
 	// 180 degree error in the reported acceleration while the rotation stays correct.
-	sensorOffset.inverse().sandwich(acceleration);
+	// The inverse is cached in the constructor because sensorOffset never changes.
+	sensorOffsetInverse.sandwich(acceleration);
 	newAcceleration = true;
 }
 
