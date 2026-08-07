@@ -325,7 +325,11 @@ public:
 			}
 			return false;
 		}();
-		if (!performsCheckedDetection && !sensorDef.imuInterface.hasSensorOnBus()) {
+		// Optional sensors keep the pre-check even when the IMU type performs its own
+		// checked detection: an absent optional sensor must stay a quiet EmptySensor
+		// rather than being built and failing motionSetup() with an error.
+		if ((!performsCheckedDetection || sensorDef.optional)
+			&& !sensorDef.imuInterface.hasSensorOnBus()) {
 			if (!sensorDef.optional) {
 				m_Manager->m_Logger.error(
 					"Mandatory sensor %d not found at address %s",
