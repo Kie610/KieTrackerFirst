@@ -35,7 +35,7 @@ namespace I2CSCAN {
 		std::array<uint8_t, 20> portArray = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 18, 19, 20, 21, 22, 23};
 		std::array<std::string, 20> portMap = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "14", "15", "18", "19", "20", "21", "22", "23"};
 		std::array<uint8_t, 5> portExclude = {12, 13, 16, 17, LED_PIN};
-#elif defined(ESP32S3)
+#elif BOARD == BOARD_XIAO_ESP32S3
 		// XIAO ESP32-S3: only scan the configured D4/D5 I2C pins. Broad GPIO
 		// probing can disturb unrelated peripherals on a tracker.
 		std::array<uint8_t, 2> portArray = {5, 6};
