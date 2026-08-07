@@ -23,6 +23,10 @@
 
 #include <i2cscan.h>
 
+#ifdef ESP32
+#include <esp_sleep.h>
+#endif
+
 #include "GlobalVars.h"
 #include "Wire.h"
 #include "batterymonitor.h"
@@ -72,10 +76,15 @@ void setup() {
 	Serial.begin(serialBaudRate);
 #if BOARD == BOARD_XIAO_ESP32S3
 	// Native USB CDC can enumerate after setup() starts. Keep this bounded so a
-	// tracker still boots when no serial monitor is attached.
-	const uint32_t serialAttachStartedAt = millis();
-	while (!Serial && millis() - serialAttachStartedAt < 2000) {
-		delay(10);
+	// tracker still boots when no serial monitor is attached. An EXT0 wake is the
+	// button bringing the tracker back on battery, where no host is attached and the
+	// wait would only add up to 2 s to every wake, so skip it there; a host that is
+	// attached still gets everything from the next log line onwards.
+	if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_EXT0) {
+		const uint32_t serialAttachStartedAt = millis();
+		while (!Serial && millis() - serialAttachStartedAt < 2000) {
+			delay(10);
+		}
 	}
 #endif
 	globalTimer = timer_create_default();
