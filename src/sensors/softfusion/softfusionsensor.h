@@ -37,6 +37,7 @@
 #include "motionprocessing/types.h"
 #include "sensors/SensorFusion.h"
 #include "sensors/softfusion/magdriver.h"
+#include "sensor_address_resolver.h"
 #include "sensor_probe.h"
 
 namespace SlimeVR::Sensors {
@@ -75,20 +76,25 @@ class SoftFusionSensor : public Sensor {
 		}
 
 		const auto value = result.value;
+		// One place for the success line: its exact wording is depended on by the
+		// recorded hardware verification logs.
+		const auto logConnected = [&]() {
+			m_Logger.info(
+				"Connected to %s at address 0x%02x (WHO_AM_I reg 0x%02x = "
+				"0x%02x, tx=%u rx=%u/%u)",
+				SensorType::Name,
+				m_sensor.m_RegisterInterface.getAddress(),
+				SensorType::Regs::WhoAmI::reg,
+				value,
+				result.endTransmissionCode,
+				result.receivedBytes,
+				result.requestedBytes
+			);
+		};
 		if constexpr (requires { SensorType::Regs::WhoAmI::values.size(); }) {
 			for (auto possible : SensorType::Regs::WhoAmI::values) {
 				if (value == possible) {
-					m_Logger.info(
-						"Connected to %s at address 0x%02x (WHO_AM_I reg 0x%02x = "
-						"0x%02x, tx=%u rx=%u/%u)",
-						SensorType::Name,
-						m_sensor.m_RegisterInterface.getAddress(),
-						SensorType::Regs::WhoAmI::reg,
-						value,
-						result.endTransmissionCode,
-						result.receivedBytes,
-						result.requestedBytes
-					);
+					logConnected();
 					return true;
 				}
 			}
@@ -108,17 +114,7 @@ class SoftFusionSensor : public Sensor {
 			return false;
 		} else {
 			if (value == SensorType::Regs::WhoAmI::value) {
-				m_Logger.info(
-					"Connected to %s at address 0x%02x (WHO_AM_I reg 0x%02x = "
-					"0x%02x, tx=%u rx=%u/%u)",
-					SensorType::Name,
-					m_sensor.m_RegisterInterface.getAddress(),
-					SensorType::Regs::WhoAmI::reg,
-					value,
-					result.endTransmissionCode,
-					result.receivedBytes,
-					result.requestedBytes
-				);
+				logConnected();
 				return true;
 			}
 			m_Logger.error(
@@ -206,12 +202,9 @@ public:
 	static constexpr auto TypeID = SensorType::Type;
 	static constexpr uint8_t Address = SensorType::Address;
 	static constexpr bool PerformsCheckedDetection = true;
-	static constexpr uint8_t AlternateAddress = []() constexpr {
-		if constexpr (requires { SensorType::AlternateAddress; }) {
-			return SensorType::AlternateAddress;
-		}
-		return static_cast<uint8_t>(SensorType::Address + 1);
-	}();
+	// Single source of truth for the alternate-address rule; see
+	// include/sensor_address_resolver.h, whose contract the I2C tests pin.
+	static constexpr uint8_t AlternateAddress = resolveSensorAddress<SensorType>(true);
 
 	SoftFusionSensor(
 		uint8_t id,
