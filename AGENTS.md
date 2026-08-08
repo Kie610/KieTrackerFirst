@@ -9,6 +9,26 @@
 - Read `docs/handoff-history.md` only when the compact handoff does not contain needed rationale.
 - When asked to fix findings from the 2026-08-07 adversarial review, read `docs/review-2026-08-07.md` first and follow the self-contained delegation prompt (T1-T6) for the requested task; no pasted prompt is needed.
 
+## Project contract
+
+- Public contract, compatibility preserved: the SlimeVR server network protocol (packet format, `SENSOR_ERROR` semantics) and the NVS-stored device state on the four assembled trackers (board id 27, Wi-Fi credentials, sensor calibration).
+- Internal implementation, compatibility not preserved: everything else in this fork, including diagnostics logging, `platformio.ini` layout, and docs.
+- Audience: the owner; assembled trackers go to VRChat players, but the firmware and repository are not distributed as a product.
+
+## Design priorities
+
+When rules conflict, the earlier item wins.
+
+1. Do not break what already works.
+2. Preserve the public contract declared above.
+3. Choose the simplest implementation that fully meets the current requirements.
+4. Keep long-term structural consistency; anticipating a future requirement never outranks item 3.
+
+## Change scope and delegation
+
+- Change nothing outside the requested scope; propose incidental formatting, renaming, and refactoring instead of performing it. State which observable behavior changes.
+- When delegating to subagents, follow the `subagent-delegation-tiers` skill. Parallel subagents each work in a dedicated worktree on a dedicated branch; the orchestrating session verifies diffs, test counts, and acceptance criteria before adopting results, and never accepts a pass report without counts.
+
 ## Branch policy
 
 - `xiao-lsm6dsv` is the primary development branch. Base all work on it and treat it as the source of truth for this fork.
@@ -61,3 +81,4 @@ The `--without-uploading --without-testing` command proves compilation only. Fla
 - Keep durable rules here, current state in `HANDOFF.agent.md`, detailed procedures in `docs/`, and history in `docs/handoff-history.md`.
 - Update `HANDOFF.agent.md` whenever branch state, verification, blockers, decisions, or next actions change materially.
 - Keep the compact handoff factual, path-oriented, and free of duplicated background prose.
+- Keep `HANDOFF.agent.md` near 4096 bytes: move dated evidence and resolved items verbatim to `docs/handoff-history.md` instead of letting the compact handoff grow into an archive.
