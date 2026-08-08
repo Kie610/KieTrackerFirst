@@ -1,6 +1,6 @@
 # Agent handoff v1
 
-updated: 2026-08-08
+updated: 2026-08-09
 repo: Kie610/KieTrackerFirst
 work_branch: xiao-lsm6dsv
 upstream: origin/xiao-lsm6dsv (local ahead, unpushed)
@@ -23,9 +23,12 @@ verified-2026-08-07:
 - compile: 4 builds + 4 test-suite compilations + `git diff --check` + config diff; passed all, failed=0; 0 Unity cases executed.
 - Full dated evidence 2026-07-30..2026-08-07, resolved U items, and method notes are preserved verbatim in `docs/handoff-history.md` (2026-08-08 migration section).
 
+verified-2026-08-09:
+- runtime (owner report, informal): all trackers including the two completed ones work well in actual VR use on the T1-T6 build; no counts recorded. Working use implies Wi-Fi provisioning of the two completed trackers is done.
+
 not-run:
-- SlimeVR Server tracking-quality check on the two completed trackers since re-flash.
-- Deep sleep current (needs microamp meter); battery run-to-cutoff.
+- Deep sleep current (needs microamp meter).
+- Battery run-to-cutoff in progress since 2026-08-08 22:08 (test unit on battery, detached ping monitor); result pending.
 - `ADDRESS_NACK` capture with module detached; WHO_AM_I-mismatch and short-read paths stay contract-test-only.
 
 ## Decisions
@@ -46,13 +49,11 @@ U:
 
 ## Next
 
-1. Confirm tracking smoothness on the two completed trackers in SlimeVR Server.
-2. Provision Wi-Fi on the two completed trackers (both sat in SmartConfig with empty credentials).
-3. Run the tracker to cutoff on battery to settle U25.
-4. Capture `ADDRESS_NACK` with the module detached.
-5. Plan the ElectroCookie column assignment into `docs/perfboard-netlist.md` (U14).
+1. Record the battery run-to-cutoff result and settle U25 (run started 2026-08-08 22:08).
+2. Capture `ADDRESS_NACK` with the module detached.
+3. Plan the ElectroCookie column assignment into `docs/perfboard-netlist.md` (U14).
 blocked-by:
-- U26 needs a microamp meter; items 1-5: none.
+- U26 needs a microamp meter; items 1-3: none.
 
 ## Paths
 
