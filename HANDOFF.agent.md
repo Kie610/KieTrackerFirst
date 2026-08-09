@@ -25,10 +25,10 @@ verified-2026-08-07:
 
 verified-2026-08-09:
 - runtime (owner report, informal): all trackers including the two completed ones work well in actual VR use on the T1-T6 build; no counts recorded. Working use implies Wi-Fi provisioning of the two completed trackers is done.
+- hardware: battery run-to-cutoff on the test unit (full 1000 mAh 803040 cell, T1-T6 PS_NONE build, detached 30 s ping monitor, VR use during part of the run). USB unplugged 2026-08-08 22:08:00, last reply 07:07:25: **8 h 59 min**, passed=1073/1073 pings before cutoff, failed=0 mid-run, end detected by 10 consecutive misses. Matches the LDO-side prediction (~9 h), so treat the 3.3 V regulator as current-conserving when estimating from 5 V-side measurements. U25 is resolved.
 
 not-run:
 - Deep sleep current (needs microamp meter).
-- Battery run-to-cutoff in progress since 2026-08-08 22:08 (test unit on battery, detached ping monitor); result pending.
 - `ADDRESS_NACK` capture with module detached; WHO_AM_I-mismatch and short-read paths stay contract-test-only.
 
 ## Decisions
@@ -42,18 +42,16 @@ A:
 - 500 ms startup wait remains provisional.
 U:
 - Pre-fix acceleration readings (determinant -1) never reconciled with code analysis; re-measure all three axes before touching accel code again (U28).
-- Battery life bounded 7-9.5 h on the 1000 mAh cell; regulator topology unknown (U25).
 - Deep sleep current unmeasured, below USB-meter resolution (U26).
 - Battery protection circuit, connector, and enclosure wear-test open (U2).
 - ElectroCookie column assignment unplanned; only three columns fully free (U14).
 
 ## Next
 
-1. Record the battery run-to-cutoff result and settle U25 (run started 2026-08-08 22:08).
-2. Capture `ADDRESS_NACK` with the module detached.
-3. Plan the ElectroCookie column assignment into `docs/perfboard-netlist.md` (U14).
+1. Capture `ADDRESS_NACK` with the module detached.
+2. Plan the ElectroCookie column assignment into `docs/perfboard-netlist.md` (U14).
 blocked-by:
-- U26 needs a microamp meter; items 1-3: none.
+- U26 needs a microamp meter; items 1-2: none.
 
 ## Paths
 
